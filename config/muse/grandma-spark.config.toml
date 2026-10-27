@@ -1,0 +1,13 @@
+model = "muse-spark-1.3"
+model_provider = "grandma_meta"
+model_reasoning_effort = "medium"
+model_context_window = 1048576
+model_auto_compact_token_limit = 200000
+
+[model_providers.grandma_meta]
+name = "Meta Model API"
+base_url = "https://api.meta.ai/v1"
+env_key = "MODEL_API_KEY"
+wire_api = "responses"
+requires_openai_auth = false
+supports_websockets = false
