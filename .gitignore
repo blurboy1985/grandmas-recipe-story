@@ -8,7 +8,7 @@ test-results/
 .env.*
 !.env.example
 data/
-uploads/
+/uploads/
 recordings/
 personal-fixtures/
 tmp/
