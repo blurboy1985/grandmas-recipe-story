@@ -4,6 +4,37 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Continue + push (28 Oct 2026, Asia/Singapore)
+
+Daniel asked: continue with the project, commit and push. No new milestone
+was started (E vs final review is still Daniel's decision). This session
+re-verified Milestones A–D green and pushed one gitignore tidy-up.
+
+### Changed files
+
+- `.gitignore`: added `tsconfig.tsbuildinfo` (build artifact; previously
+  left untracked by convention, now ignored by rule).
+- This handoff: this entry.
+
+### Checks run (actual results)
+
+- `npm run typecheck`: pass. `npm run lint`: pass (38 files).
+- `npm test`: 44/44 pass (8 suites).
+- `npm run build`: pass (9 routes: `/`, `/recipes/[id]`, 6 API routes,
+  `/_not-found`).
+- `git status`: clean except the now-ignored `tsconfig.tsbuildinfo`;
+  no credentials, recordings, or personal fixtures in the tree.
+- No live Meta calls made in-session; sample mode untouched.
+
+### Remaining / next task (unchanged: Daniel decision)
+
+Option 1 — optional Milestone E, or Option 2 — Wonder final review; same
+commands as in the Milestone D entry below. Daniel-gated regardless: live
+Voice proof, three consented WAVs, licence choice, screenshots, ≤3-minute
+demo video. No form or terms submitted.
+
+---
+
 ## Milestone D complete (28 Oct 2026, Asia/Singapore)
 
 Family evidence, persistence and print. No live Meta calls made in-session.

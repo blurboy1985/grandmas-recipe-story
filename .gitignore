@@ -21,4 +21,5 @@ logs/
 *-shm
 .DS_Store
 __pycache__/
+tsconfig.tsbuildinfo
 # Only intentionally public, fictional or specifically permitted media belongs in samples/.
