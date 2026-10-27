@@ -7,10 +7,8 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 ## Milestone D complete (28 Oct 2026, Asia/Singapore)
 
 Family evidence, persistence and print. No live Meta calls made in-session.
-Changes are uncommitted; Daniel decides when to commit/push. NOTE: the
-published repo is currently missing `src/app/api/uploads/route.ts` (the
-`uploads/` ignore pattern shadowed the API route) — the fix below must be
-pushed before any fresh-clone demo.
+Committed and pushed 28 Oct 2026 (`348710b` route fix + `642425a` Milestone
+D); the published repo now includes `src/app/api/uploads/route.ts`.
 
 ### Changed / added files
 
