@@ -1,6 +1,44 @@
-# Handoff — Milestone C complete (Spark), Milestone D next
+# Handoff — Published to GitHub; Milestone D next
 
-Updated 27 October 2026 (Spark session, Asia/Singapore).
+Updated 28 October 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Publication (28 Oct 2026, Asia/Singapore)
+
+Daniel asked: create a GitHub repo, commit and push. Done:
+`https://github.com/blurboy1985/grandmas-recipe-story` (public, `main`).
+
+### Changed files (truthfulness fixes before publishing)
+
+- `README.md`: status now Milestones A–C code-complete; `npm ci`; 36 tests /
+  7 suites; lockfile pinned; Zod/OpenAI follow-ups marked done.
+- `AGENTS.md`, `docs/PLAN.md`: phase/status/next-task lines now say A–C
+  code-complete (C not live-proven), D next.
+- This handoff: publication entry.
+
+### Checks run (actual results)
+
+- `tsc --noEmit`: pass. `lint`: pass (37 files). `node --test`: 36/36 pass.
+- `next build`: pass (8 routes incl. extract + transcribe).
+- Pre-commit review: no `.env` files; secret-pattern scan clean; `data/`,
+  `node_modules/`, `.next/`, `.DS_Store`, `__pycache__` verified ignored;
+  `tsconfig.tsbuildinfo` left untracked; staged 59 intended files only.
+- Note: `gh` used the keyring login (the `GITHUB_TOKEN` env value was
+  invalid, so it was unset for the `gh` call only; nothing printed).
+
+### Remaining / next task
+
+Start a new session with the Spark profile:
+
+```zsh
+cd /Users/danielquek/grandma-receipe-story
+python3 scripts/muse-codex.py grandma-spark "Read AGENTS.md and docs/HANDOFF.md. Implement and verify only Milestone D."
+```
+
+Still outstanding: Milestone D; live Voice proof (transcribe smoke + three
+consented WAVs + one full live flow); licence choice; screenshots; demo
+video. No form or terms submitted.
 
 ---
 
