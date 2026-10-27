@@ -22,5 +22,5 @@ define the scope. This is a solo Indie developer track / Build for Your World en
 - Run meaningful checks, report actual results and limitations, and update `docs/HANDOFF.md` with changed files, checks, remaining work and next task.
 - Prepare a truthful public repository and a demo of at most three minutes. Never submit the form, accept legal/promotional terms, post to X, or upload a video on Daniel's behalf. Publication is a separate step after reviewing intended public files and assets.
 
-Current phase: Milestones A–C code-complete (C not yet live-proven); Milestone D next.
-Read the handoff for the next bounded Spark task.
+Current phase: Milestones A–D code-complete (C not yet live-proven). Daniel decision next: optional E or final review.
+Read the handoff for the next bounded task.

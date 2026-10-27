@@ -22,16 +22,17 @@ and story draft → clarification/correction → saved card with original audio.
 | A: sample interface | Spark medium | Code-complete | No-key flow, persistent save/reopen, playback/print, mobile review, typecheck/build |
 | B: grounded extraction | Spark medium | Code-complete, live-verified once | Real text request, validated sources/schema, semantic cases, cache/dedup checks |
 | C: transcription | Spark medium | Code-complete, not live-proven | Validated real WAV flow and failure handling, three recording evaluations |
-| D: clarify/save/print | Spark medium | Not started | Versioned family answers/corrections, visible unknowns, reopen/delete/playback/print |
+| D: clarify/save/print | Spark medium | Code-complete | Versioned family answers/corrections, visible unknowns, reopen/delete/playback/print |
 | E: browser recording | Spark; Wonder if stuck | Optional, not started | Only after A–D pass; conversion and Safari/iPhone + Chrome checks |
 | Final review | Wonder then Spark fixes | Not started | Evidence-based review, genuine full live flow, family review, fresh-clone checks |
 | Submission package | Wonder review, Spark edits | Drafts prepared | Public repo, accessible ≤3-minute video, truthful implemented-feature claims |
 
-## Next bounded task: Milestone D (Spark session)
+## Next bounded task: see HANDOFF (Daniel decision)
 
-Milestones A–C are code-complete. Exit this session and start Spark:
-`python3 scripts/muse-codex.py grandma-spark "Read AGENTS.md and docs/HANDOFF.md. Implement and verify only Milestone D."`
-Do not start Milestone E until A–D pass.
+Milestones A–D are code-complete. Either run optional Milestone E (browser
+recording; needs FFmpeg, HTTPS phone setup, Safari/iPhone + Chrome checks) or
+go straight to the Wonder final review, then the submission package. The
+handoff names the exact next command once Daniel chooses.
 
 Use one Node.js process, Next.js TypeScript, server routes, SQLite and media on
 private persistent disk. Server audio/filesystem routes require the Node runtime.

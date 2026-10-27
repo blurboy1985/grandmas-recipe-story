@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync, existsSync } from "node:fs";
+import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 
 let db: DatabaseSync | null = null;
@@ -83,6 +83,42 @@ function recoverInterrupted(handle: DatabaseSync) {
     ).run(new Date().toISOString());
     handle.prepare("DELETE FROM model_cache WHERE state='running'").run();
   } catch { /* tables may not exist on first run */ }
+  sweepWith(handle, 24 * 60 * 60 * 1000);
+}
+
+// Delete staged uploads older than maxAgeMs and retry tombstoned file
+// deletions. A tombstone whose file is already gone is cleared.
+function sweepWith(handle: DatabaseSync, maxAgeMs: number): void {
+  try {
+    const tmpDir = join(dataDir(), "tmp-uploads");
+    if (existsSync(tmpDir)) {
+      const cutoff = Date.now() - maxAgeMs;
+      for (const name of readdirSync(tmpDir)) {
+        if (!/\.wav$/i.test(name)) continue;
+        const p = join(tmpDir, name);
+        try { if (statSync(p).mtimeMs < cutoff) unlinkSync(p); } catch {}
+      }
+    }
+  } catch {}
+  try {
+    const rows = handle.prepare("SELECT id, relative_path FROM tombstones").all() as { id: string; relative_path: string }[];
+    for (const t of rows) {
+      const full = join(dataDir(), t.relative_path);
+      if (!full.startsWith(dataDir() + "/")) continue;
+      try {
+        if (!existsSync(full)) {
+          handle.prepare("DELETE FROM tombstones WHERE id=?").run(t.id);
+          continue;
+        }
+        unlinkSync(full);
+        handle.prepare("DELETE FROM tombstones WHERE id=?").run(t.id);
+      } catch {}
+    }
+  } catch {}
+}
+
+export function sweepStaleFiles(maxAgeMs = 24 * 60 * 60 * 1000): void {
+  sweepWith(getDb(), maxAgeMs);
 }
 
 export function uuid(): string {

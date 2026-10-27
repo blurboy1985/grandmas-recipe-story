@@ -76,14 +76,25 @@ export function stageUpload(bytes: Uint8Array, originalName: string): { uploadId
   return { uploadId, byteSize: bytes.length };
 }
 
+function stagedPath(uploadId: string): string | null {
+  if (!/^[0-9a-f-]{1,64}$/i.test(uploadId)) return null;
+  return join(dataDir(), "tmp-uploads", `${uploadId}.wav`);
+}
+
+export function discardStagedUpload(uploadId: string): void {
+  const p = stagedPath(uploadId);
+  if (!p) return;
+  try { unlinkSync(p); } catch {}
+}
+
 export function createUploadRecipe(input: CreateUploadInput, info: { durationMs: number; byteSize: number; sha256: string }): { id: string } {
   if (!input.consent) throw Object.assign(new Error("consent required"), { status: 400, code: "consent_required" });
   if (!input.cookName.trim()) throw Object.assign(new Error("cook name required"), { status: 400, code: "cook_required" });
   if (!input.dishName.trim()) throw Object.assign(new Error("dish name required"), { status: 400, code: "dish_required" });
   const db = getDb();
   const createdAt = nowIso();
-  const tmpPath = join(dataDir(), "tmp-uploads", `${input.uploadId}.wav`);
-  if (!existsSync(tmpPath)) throw Object.assign(new Error("upload expired"), { status: 400, code: "upload_expired" });
+  const tmpPath = stagedPath(input.uploadId);
+  if (!tmpPath || !existsSync(tmpPath)) throw Object.assign(new Error("upload expired"), { status: 400, code: "upload_expired" });
   const recordingId = uuid();
   const jobId = uuid();
   const relPath = `recordings/${recordingId}.wav`;
@@ -112,7 +123,7 @@ export interface RecipeDetail {
   editedTranscripts: { id: string; text: string; approvedAt: string | null; createdAt: string }[];
   approvedVersionId: string | null;
   draft: { id: string; output: unknown; reviewState: ReviewState; createdAt: string } | null;
-  clarifications: { id: string; question: string; relatedField: string; sourceSegmentIds: string[]; answer: string | null }[];
+  clarifications: { id: string; question: string; relatedField: string; sourceSegmentIds: string[]; answer: string | null; provenance: string; answeredAt: string | null }[];
   corrections: { id: string; targetField: string; correctedValue: unknown; createdAt: string; versionId: string }[];
   versions: { id: string; createdAt: string; reviewState: string; model: string }[];
 }
@@ -139,7 +150,7 @@ export function getRecipeDetail(jobId: string): RecipeDetail | null {
     editedTranscripts: edited.map((t) => ({ id: String(t.id), text: String(t.text), approvedAt: t.approved_at ? String(t.approved_at) : null, createdAt: String(t.created_at) })),
     approvedVersionId: job.approved_transcript_version_id ? String(job.approved_transcript_version_id) : null,
     draft: rv ? { id: String(rv.id), output: JSON.parse(String(rv.output_json)), reviewState: String(rv.review_state) as ReviewState, createdAt: String(rv.created_at) } : null,
-    clarifications: clar.map((c) => ({ id: String(c.id), question: String(c.question), relatedField: String(c.related_field), sourceSegmentIds: JSON.parse(String(c.source_segment_ids_json)), answer: c.answer ? String(c.answer) : null })),
+    clarifications: clar.map((c) => ({ id: String(c.id), question: String(c.question), relatedField: String(c.related_field), sourceSegmentIds: JSON.parse(String(c.source_segment_ids_json)), answer: c.answer ? String(c.answer) : null, provenance: String(c.provenance ?? "model"), answeredAt: c.answered_at ? String(c.answered_at) : null })),
     corrections: corr.map((c) => ({ id: String(c.id), targetField: String(c.target_field), correctedValue: JSON.parse(String(c.corrected_value_json)), createdAt: String(c.created_at), versionId: String(c.recipe_version_id) })),
     versions: vers,
   };
@@ -164,6 +175,9 @@ export function editTranscript(jobId: string, text: string): { versionId: string
     .run(versionId, rec.recording_id, "edited", clean, JSON.stringify(segments), createdAt, null);
   // Editing clears approval until re-approved; job returns to uploaded/transcript_ready base.
   db.prepare("UPDATE jobs SET approved_transcript_version_id=NULL, processing_state=CASE WHEN processing_state='draft_ready' THEN 'transcript_ready' ELSE processing_state END, updated_at=? WHERE id=?").run(createdAt, jobId);
+  // New evidence returns the latest draft to draft until re-reviewed.
+  const latest = db.prepare("SELECT id FROM recipe_versions WHERE job_id=? ORDER BY created_at DESC LIMIT 1").get(jobId) as { id: string } | undefined;
+  if (latest) db.prepare("UPDATE recipe_versions SET review_state='draft' WHERE id=?").run(latest.id);
   return { versionId };
 }
 
@@ -189,6 +203,8 @@ export function answerClarification(jobId: string, clarificationId: string, answ
   // Treat content as data; cap length to keep the local MVP safe.
   const clean = answer.trim().slice(0, 2000);
   db.prepare("UPDATE clarifications SET answer=?, answered_at=?, provenance='family' WHERE id=?").run(clean, nowIso(), clarificationId);
+  // New evidence returns the draft to draft until re-reviewed.
+  db.prepare("UPDATE recipe_versions SET review_state='draft' WHERE id=?").run(rv.id);
 }
 
 export function addCorrection(jobId: string, targetField: string, correctedValue: unknown): { id: string } {
@@ -200,6 +216,8 @@ export function addCorrection(jobId: string, targetField: string, correctedValue
   const id = uuid();
   db.prepare("INSERT INTO family_corrections (id, recipe_version_id, target_field, previous_value_json, corrected_value_json, created_at) VALUES (?,?,?,?,?,?)")
     .run(id, rv.id, field, JSON.stringify(null), JSON.stringify(correctedValue), nowIso());
+  // New evidence returns the draft to draft until re-reviewed.
+  db.prepare("UPDATE recipe_versions SET review_state='draft' WHERE id=?").run(rv.id);
   return { id };
 }
 
@@ -217,7 +235,15 @@ export function deleteRecipe(jobId: string): void {
   const rec = db.prepare("SELECT recording_id FROM jobs WHERE id=?").get(jobId) as { recording_id: string } | undefined;
   if (!rec) return;
   const recRow = db.prepare("SELECT relative_path, photo_relative_path FROM recordings WHERE id=?").get(rec.recording_id) as { relative_path: string; photo_relative_path: string | null } | undefined;
-  db.prepare("DELETE FROM recordings WHERE id=?").run(rec.recording_id);
+  const rvIds = (db.prepare("SELECT id FROM recipe_versions WHERE job_id=?").all(jobId) as { id: string }[]).map((r) => r.id);
+  const tvIds = (db.prepare("SELECT id FROM transcript_versions WHERE recording_id=?").all(rec.recording_id) as { id: string }[]).map((r) => r.id);
+  const refs = [...rvIds, ...tvIds];
+  db.exec("BEGIN");
+  try {
+    if (refs.length) db.prepare(`DELETE FROM model_cache WHERE result_ref IN (${refs.map(() => "?").join(",")})`).run(...refs);
+    db.prepare("DELETE FROM recordings WHERE id=?").run(rec.recording_id);
+    db.exec("COMMIT");
+  } catch (e) { try { db.exec("ROLLBACK"); } catch {} throw e; }
   for (const rel of [recRow?.relative_path, recRow?.photo_relative_path].filter(Boolean) as string[]) {
     try { unlinkSync(join(dataDir(), rel)); } catch {
       try { db.prepare("INSERT INTO tombstones (id, relative_path, created_at) VALUES (?,?,?)").run(uuid(), rel, nowIso()); } catch {}

@@ -14,7 +14,7 @@ interface Detail {
     steps: { instruction: string; source_segment_ids: string[]; needs_confirmation: boolean }[];
     story: { paraphrase: string; source_segment_ids: string[]; quotes: { text: string; source_segment_id: string }[] };
   } } | null;
-  clarifications: { id: string; question: string; relatedField: string; sourceSegmentIds: string[]; answer: string | null }[];
+  clarifications: { id: string; question: string; relatedField: string; sourceSegmentIds: string[]; answer: string | null; provenance: string; answeredAt: string | null }[];
   corrections: { id: string; targetField: string; correctedValue: unknown; versionId: string }[];
   versions: { id: string; createdAt: string; reviewState: string; model: string }[];
 }
@@ -33,7 +33,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
   const [transcribeNote, setTranscribeNote] = useState("");
 
   async function extract(regenerate: boolean) {
-    if (regenerate && !confirm("Generate a new draft version? Earlier versions and your manual corrections are kept.")) return;
+    if (regenerate && !confirm("Generate a new draft version? AI-generated fields may change; earlier versions, your answers, and your manual corrections are kept.")) return;
     setError(""); setExtractNote(""); setExtracting(true);
     try {
       const res = await fetch(`/api/recipes/${id}/extract`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ regenerate }) });
@@ -139,7 +139,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
             <button className="secondary" onClick={() => void act({ action: "approve-transcript", versionId: detail.originalTranscript!.id })}>Approve original</button>
           ) : null}
         </div>
-        <p className="muted">Approved version: {detail.approvedVersionId ?? "none yet"}. Extraction in Milestone B will only use the approved version.</p>
+        <p className="muted">Approved version: {detail.approvedVersionId ?? "none yet"}. Extraction only uses the approved version.</p>
       </section>
 
       <section className="card noprint">
@@ -178,7 +178,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
           <p className="muted">* needs family confirmation. Generated prose is a paraphrase; only the verified quotes are exact words.</p>
         </section>
       ) : (
-        <section className="card"><h2>Recipe draft</h2><p className="muted">No draft yet. Live extraction arrives in Milestone B; uploaded recordings keep the approved transcript until then.</p></section>
+        <section className="card"><h2>Recipe draft</h2><p className="muted">No draft yet — generate one above once a transcript is approved.</p></section>
       )}
 
       {detail.clarifications.length > 0 ? (
@@ -190,6 +190,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
                 <input type="text" value={answers[c.id] ?? ""} onChange={(e) => setAnswers({ ...answers, [c.id]: e.target.value })} />
               </label>
               <div className="row noprint"><button className="secondary" onClick={() => void act({ action: "answer", clarificationId: c.id, answer: answers[c.id] ?? "" })}>Save answer</button></div>
+              {c.answer ? <p className="muted">Family answer{c.answeredAt ? ` · saved ${c.answeredAt}` : ""} — used as evidence if you regenerate.</p> : <p className="muted">Model question — awaiting a family answer.</p>}
             </div>
           ))}
         </section>
@@ -207,7 +208,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
       <section className="card">
         <h2>Saved card</h2>
-        <p className="muted">Review state: {detail.draft?.reviewState ?? "no draft"}. “Confirmed” means the family reviewed it — unknowns stay visible and it is not a proof of factual accuracy.</p>
+        <p className="muted">Review state: {detail.draft?.reviewState ?? "no draft"}. “Confirmed” means the family reviewed it — unknowns stay visible and it is not a proof of factual accuracy. New answers, corrections, or transcript edits return the draft to “draft” until re-reviewed.</p>
         <div className="row noprint">
           <button className="secondary" onClick={() => void act({ action: "review", reviewState: "reviewed_with_unknowns" })}>Mark reviewed</button>
           <button className="secondary" onClick={() => void act({ action: "review", reviewState: "confirmed" })}>Mark confirmed</button>

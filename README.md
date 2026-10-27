@@ -73,7 +73,7 @@ Checks (all passing in the implementation session):
 ```zsh
 npm run typecheck
 npm run lint           # offline project guard (privacy + grounding)
-npm test               # node:test, 36 assertions across 7 suites
+npm test               # node:test, 44 assertions across 8 suites
 npm run build
 ```
 
@@ -136,3 +136,18 @@ a non-sensitive WAV):
 read -rs 'META_API_KEY?Meta app key (hidden): '; export META_API_KEY
 node scripts/transcribe-smoke.mjs [--audio /path/to/non-sensitive-short.wav]; unset META_API_KEY
 ```
+
+## Milestone D: family evidence, persistence and print
+
+Implemented 28 October 2026: answers and corrections are stored as separate
+family evidence with provenance and timestamps, and any new answer,
+correction, or transcript edit returns the draft to `draft` until re-reviewed
+(`confirmed` still means family-reviewed, never proven fact). Regeneration
+warns that AI-generated fields may change while keeping all versions, answers,
+and corrections. Delete removes rows, media files, and cache entries in one
+transaction (failed file deletions tombstone for retry); staged uploads are
+discarded if creation fails and swept with tombstones on startup. Print CSS
+hides interactive sections for browser Print / Save as PDF. Save/reopen,
+delete, original-audio playback, and print were verified at store/handler
+level plus `next build` output and a 14-check live HTTP smoke; a real-browser
+Print/PDF pass is still pending.

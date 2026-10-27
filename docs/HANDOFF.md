@@ -1,6 +1,82 @@
-# Handoff — Published to GitHub; Milestone D next
+# Handoff — Milestone D complete; Daniel decision next (E vs final review)
 
 Updated 28 October 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Milestone D complete (28 Oct 2026, Asia/Singapore)
+
+Family evidence, persistence and print. No live Meta calls made in-session.
+Changes are uncommitted; Daniel decides when to commit/push. NOTE: the
+published repo is currently missing `src/app/api/uploads/route.ts` (the
+`uploads/` ignore pattern shadowed the API route) — the fix below must be
+pushed before any fresh-clone demo.
+
+### Changed / added files
+
+- `src/server/store.ts`: answers/corrections/transcript edits reset the
+  latest draft to `draft`; `deleteRecipe` removes rows + media + cache rows
+  referencing the job's versions in one transaction; `discardStagedUpload`
+  + `stagedPath` validation (also hardens `createUploadRecipe` against
+  path traversal); clarification detail gains `provenance`/`answeredAt`
+- `src/server/db.ts`: `sweepStaleFiles` (stale staged uploads + tombstone
+  retry/clear), wired into startup recovery
+- `src/app/api/uploads/route.ts`: staged file discarded if recipe creation
+  fails after staging
+- `src/app/recipes/[id]/page.tsx`: regen warning (fields may change, versions
+  + answers + corrections kept); family-answer vs model-question labels;
+  review-reset note; two stale Milestone B strings fixed
+- `tests/family-evidence.test.ts` (new, 8 tests) — written first, observed
+  failing, then implemented to green
+- `.gitignore`: `uploads/` → `/uploads/` — the old pattern silently excluded
+  `src/app/api/uploads/route.ts` from the published repo; verified it was the
+  only wrongly ignored source file, and the route is now untracked-visible
+- `README.md` (Milestone D section, 44 tests), `docs/PLAN.md` (D
+  code-complete, next = Daniel decision), `AGENTS.md` (phase line), handoff
+
+### Checks run (actual results)
+
+- `tsc --noEmit`: pass. `lint`: pass (38 files). `node --test`: 44/44 pass
+  (36 existing + 8 D: answer-as-evidence, 3× review-reset, delete
+  rows/media/cache/tmp, tombstone+sweep, staged sweep/discard, print/labels).
+- `next build`: pass (8 routes; `/recipes/[id]` + `/api/uploads` rebuilt).
+- Live HTTP smoke (`/tmp/smoke-d.mjs`, throwaway, not committed): 14/14
+  pass against `next start` — sample create, provenance/answeredAt fields,
+  answer + correction review-resets, WAV playback route, page shell,
+  delete + gone. Port binding worked in this session.
+
+### Limitations (truthful, not silent)
+
+- No real-browser rendering check: the live HTTP smoke proves routes and
+  data, but Print/PDF layout and the client-rendered buttons still need one
+  real browser pass by Daniel (`npm run dev`, open http://localhost:3000).
+- `audio.ts` still accepts 8–48 kHz (plan note says 16/24 kHz); untouched —
+  tighten only if Wonder review requires it.
+- Per-field inline editing not added: free-text corrections stay the MVP
+  mechanism (generated `output_json` is never mutated by corrections).
+- Photo upload still absent (row/route support exists); not in D scope.
+- Live Voice proof still outstanding (Daniel-gated transcribe smoke +
+  three consented WAVs + one full live flow).
+
+### Remaining / next task (Daniel decision, then a fresh session)
+
+Option 1 — optional Milestone E (Spark; heavy device setup):
+
+```zsh
+cd /Users/danielquek/grandma-receipe-story
+python3 scripts/muse-codex.py grandma-spark "Read AGENTS.md and docs/HANDOFF.md. Implement and verify only Milestone E."
+```
+
+Option 2 — final review first (Wonder, high), then submission package:
+
+```zsh
+cd /Users/danielquek/grandma-receipe-story
+python3 scripts/muse-codex.py grandma-wonder "Read AGENTS.md and docs/HANDOFF.md. Perform only the final review; report findings with severity and evidence, do not refactor."
+```
+
+Daniel-gated regardless: commit/push this work, Meta key for live Voice
+proof, three consented WAVs, licence choice, screenshots, ≤3-minute demo
+video. No form or terms submitted.
 
 ---
 
