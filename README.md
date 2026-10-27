@@ -149,5 +149,6 @@ transaction (failed file deletions tombstone for retry); staged uploads are
 discarded if creation fails and swept with tombstones on startup. Print CSS
 hides interactive sections for browser Print / Save as PDF. Save/reopen,
 delete, original-audio playback, and print were verified at store/handler
-level plus `next build` output and a 14-check live HTTP smoke; a real-browser
-Print/PDF pass is still pending.
+level plus `next build` output, a 14-check live HTTP smoke, and a
+headless-Chrome pass (mobile/desktop screenshots, print-to-PDF,
+print-media emulation with zero overflow at 390px).

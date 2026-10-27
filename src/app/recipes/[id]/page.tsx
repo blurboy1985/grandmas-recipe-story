@@ -100,7 +100,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       <section className="card">
         <h2>Recording</h2>
         <p className="muted">Cook: {detail.cookName || "—"}{detail.languageHint ? ` · languages: ${detail.languageHint}` : ""}</p>
-        <audio controls src={detail.audioUrl} />
+        <audio controls src={detail.audioUrl} className="noprint" />
         {detail.mode === "sample" ? <p className="muted">Sample tone stands in for a family recording. It is fictional and committed on purpose.</p> : null}
       </section>
 

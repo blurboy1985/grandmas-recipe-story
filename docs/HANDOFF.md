@@ -42,12 +42,27 @@ D); the published repo now includes `src/app/api/uploads/route.ts`.
   pass against `next start` — sample create, provenance/answeredAt fields,
   answer + correction review-resets, WAV playback route, page shell,
   delete + gone. Port binding worked in this session.
+- Headless-Chrome browser pass (28 Oct; your installed Chrome 156, fresh
+  throwaway profile, never touched your open windows): 390px mobile and
+  768px desktop screenshots render correctly; CDP measurement at forced
+  390px shows zero overflowing elements; print-media emulation hides all
+  10 `.noprint` controls (nav, progress, buttons, audio player) with the
+  title and content visible; `--print-to-pdf` produced a 3-page Letter PDF.
+  Found and fixed: audio player printed as a dead control (now `.noprint`).
+  Earlier 390px CLI screenshots looked clipped, but element-level
+  measurement disproved it — a headless-screenshot artifact, not a bug.
+  Cleanup done: smoke recipe deleted via API, servers stopped, /tmp files
+  removed, `data/app` holds no recipes.
+- Lesson: never run `next build` while `next dev` serves from the same
+  `.next/` — the dev server breaks with `Cannot find module './897.js'`.
+  Fixed by stopping dev, deleting `.next/`, and restarting.
 
 ### Limitations (truthful, not silent)
 
-- No real-browser rendering check: the live HTTP smoke proves routes and
-  data, but Print/PDF layout and the client-rendered buttons still need one
-  real browser pass by Daniel (`npm run dev`, open http://localhost:3000).
+- Rendering verified in headless Chrome as above; no check in a visible
+  browser window with human eyes yet. Daniel may still open
+  http://localhost:3000 after `npm run dev` for a final look, but it is no
+  longer a verification gap.
 - `audio.ts` still accepts 8–48 kHz (plan note says 16/24 kHz); untouched —
   tighten only if Wonder review requires it.
 - Per-field inline editing not added: free-text corrections stay the MVP
