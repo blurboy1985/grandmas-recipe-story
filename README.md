@@ -1,18 +1,34 @@
 # Grandma's Recipe Story
 
-A planned mobile-friendly app for preserving a short cooking recording as an
+> **Recipes fade. Her voice shouldn't.**
+>
+> Record Grandma telling one dish. Keep her voice with the recipe —
+> exactly as she said it.
+
+![Landing page — “Recipes fade. Her voice shouldn't.” with record-first home and recipe box](docs/images/landing-page.jpg)
+
+*The live landing page at https://grandma-recipe.danielquek.com (28 Oct 2026).
+The old-photo and grandma character images are AI-generated illustrations;
+your family photos and recordings stay private on your device.*
+
+A mobile-friendly app for preserving a short cooking recording as an
 editable recipe and family story, with original audio and visible uncertainty.
 
 **Status (28 Oct 2026): Milestones A–E are code-complete — sample flow,
 Spark extraction, Voice transcription, family evidence/print, and
 browser recording. Wonder final review done (see [review](docs/REVIEW.md)).
-The deployed home is record-first: record in the browser (or upload a
-WAV) on the left, the recipe box on the right, with three fictional
-sample cards pre-loaded. Deployed at
-https://grandma-recipe.danielquek.com (container v6). One live Spark
-extraction verified; live Voice transcription not yet verified on a
-real recording; no demo video (a 50-second cut was made and removed
-the same day at Daniel's request — a new demo is still outstanding).**
+The home opens on one light landing section (tagline, vintage photo,
+animated grandma character), then the recorder: press **Record in this
+browser** first — no name, dish, language or checkbox to fill in before
+recording. Naming the card is optional and happens at save time (blanks
+save as “Grandma · Untitled dish”); a WAV upload remains as fallback,
+and the recipe box beside it is pre-loaded with three fictional sample
+cards. Deployed at https://grandma-recipe.danielquek.com (container
+v7, image `c2b68f9d…`). Checks: typecheck, lint (49 files) and 62 tests
+passing. One live Spark extraction verified; live Voice transcription
+not yet verified on a real recording. A three-minute demo video has
+been rendered locally (git-ignored, not yet uploaded — see
+[demo storyboard](docs/DEMO.md)).**
 
 The implementation guide is
 [Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md](Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md)
@@ -47,7 +63,8 @@ GitHub repository, and an accessible video of at most three minutes.
 remain drafts until the app works and evidence is captured. No form or legal
 terms will be submitted or accepted by the agent.
 
-Screenshots, licence choice and demo links are still pending. Judges can run
+A landing-page screenshot is included at the top of this README; licence
+choice and a published demo-video link are still pending. Judges can run
 the visibly labelled sample mode without credentials or Codex (see Milestone A
 below).
 
@@ -74,7 +91,7 @@ Checks (all passing in the implementation session):
 ```zsh
 npm run typecheck
 npm run lint           # offline project guard (privacy + grounding)
-npm test               # node:test, 60 tests across 11 suites
+npm test               # node:test, 62 tests
 npm run build
 ```
 
@@ -157,19 +174,30 @@ print-media emulation with zero overflow at 390px).
 ## Milestone E: browser recording + record-first home (28 Oct 2026)
 
 Implemented 28 October 2026: the home page now opens on recording —
-name, dish, language and consent, then "Record in this browser"
-(`MediaRecorder` with MIME detection, a 1–5 minute timer with
-auto-stop, listen-back preview, and discard/re-record). The take is
-converted in the browser (Web Audio) to mono 16 kHz 16-bit PCM WAV
-and saved through the same byte-validated path as a WAV upload,
-which remains as a fallback. The recipe box sits beside the recorder
-(no scrolling hunt on desktop) and is pre-loaded once with three
-fictional sample cards (Tomato Egg, Steamed Egg with Minced Pork,
-Ginger Chicken with Spring Onion), each labelled and deletable.
-Warmth is carried by type (Fraunces/Caveat) and washi-tape cards —
-no hero photo. Real-device recording (Safari/iPhone, Chrome) is
-still to be proven by Daniel; a demo video was produced and then
-removed the same day at his request, so the demo remains outstanding.
+"Record in this browser" (`MediaRecorder` with MIME detection, a
+1–5 minute timer with auto-stop, listen-back preview, and
+discard/re-record). The take is converted in the browser (Web Audio)
+to mono 16 kHz 16-bit PCM WAV and saved through the same
+byte-validated path as a WAV upload, which remains as a fallback.
+The recipe box sits beside the recorder (no scrolling hunt on
+desktop) and is pre-loaded once with three fictional sample cards
+(Tomato Egg, Steamed Egg with Minced Pork, Ginger Chicken with
+Spring Onion), each labelled and deletable. Real-device recording
+(Safari/iPhone, Chrome) is still to be proven by Daniel.
+
+## Landing + record-first, no form gate (28 Oct 2026)
+
+The home now opens on a single light landing section — the tagline
+“Recipes fade. Her voice shouldn't.”, a vintage-style old photo and
+an animated grandma character (both AI-generated illustrations in
+`public/`), one line of copy and two links — above the recorder and
+recipe box (screenshot at the top of this README). Recording no
+longer waits on the form: press Record with nothing filled in; name,
+dish and language are optional fields below the recorder, applied
+at save time via `resolveSaveDetails` (blank saves as “Grandma ·
+Untitled dish”), and there is no consent checkbox. Saving is the
+deliberate action; the data layer still timestamps the save. The
+same no-gate path covers WAV uploads.
 
 ## Final review + vintage recipe-box design (28 Oct 2026)
 

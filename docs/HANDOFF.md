@@ -54,8 +54,15 @@ deploy.
 - Checks: typecheck pass, lint pass (49 files), `npm test` 62/62,
   `build` + `build:local` pass; probe on `next start` :3113 — record
   button present before optional details, consent text absent.
-  Commit / push / deploy follow in this session (see git log and the
-  live check recorded below).
+- Committed + pushed (`31105ae`), then deployed 28 Oct 2026: image
+  `v7`, digest `c2b68f9d…`, container instance `grandma-recipe-v7`,
+  Worker version `27ea6484-db9a-4924-a08f-570ffa6ff9df`. Verified
+  live: home 200 with tagline + “Name this card”, consent text
+  absent, both landing images serving.
+- README updated with the live landing screenshot
+  (`docs/images/landing-page.jpg`, headless-Chrome capture of the
+  deployed site, inspected) and the latest status; that README
+  update is committed/pushed after this entry.
 
 ---
 

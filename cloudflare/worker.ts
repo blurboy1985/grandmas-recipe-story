@@ -86,7 +86,7 @@ export default {
     // Bump this name whenever the container image changes: a running
     // instance keeps its starting image until it restarts, so a new
     // name is how a new image takes over. The old instance idles out.
-    const stub = env.GRANDMA_CONTAINER.getByName("grandma-recipe-v6");
+    const stub = env.GRANDMA_CONTAINER.getByName("grandma-recipe-v7");
     return stub.fetch(request);
   },
 };
