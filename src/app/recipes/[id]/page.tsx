@@ -197,7 +197,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
         </section>
       ) : null}
 
-      <section className="card">
+      <section className="card sage">
         <h2>Transcript review</h2>
         <h3>Original (kept unchanged)</h3>
         <p className="source-text">{detail.originalTranscript?.text || <span className="muted">{detail.mode === "sample" ? "No transcript yet — type it below, then approve." : "No transcript yet — transcribe above, or type it below, then approve."}</span>}</p>
@@ -217,7 +217,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
         <p className="muted">Approved version: {detail.approvedVersionId ?? "none yet"}. Extraction only uses the approved version.</p>
       </section>
 
-      <section className="card noprint">
+      <section className="card sage noprint">
         <h2>Recipe extraction (Spark)</h2>
         {detail.approvedVersionId ? (
           <>
@@ -271,7 +271,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
         </section>
       ) : null}
 
-      <section className="card">
+      <section className="card sage">
         <h2>Family corrections</h2>
         {detail.corrections.length === 0 ? <p className="muted">No corrections yet. Corrections are stored separately and never silently rewrite the draft.</p> : (
           <ul>{detail.corrections.map((c) => <li key={c.id}><strong>{c.targetField}</strong>: {JSON.stringify(c.correctedValue)} <span className="muted">· v{c.versionId.slice(0, 8)}</span></li>)}</ul>

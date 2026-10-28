@@ -4,6 +4,35 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## UI/UX revision from mockup artifact (28 Oct 2026)
+
+Daniel asked: revise UI/UX based on the shared mockup
+(grandma-recipe-mockup), then commit, push and deploy.
+
+- Design moves applied: warm cream background kept; cards lost their
+  rules/red margin/ring holes — now unruled warm paper (`#fffaf0`),
+  16px radius, soft shadow, one washi-tape tab per card (mustard, sage
+  alternate). Fonts: Fraunces (display), Lora (body), Caveat (hand),
+  Special Elite (stamps) via `next/font/google` with system fallbacks.
+  Pill buttons, dashed dropzone for WAV, pill consent box, Caveat card
+  numbers, stamp badges, dark-mode palette from the mockup, print stays
+  clean (hero/tape hidden).
+- Home: hero headline + lede, grandma watercolour figure
+  (`public/grandma-hero.webp`, 1200w/153KB, from the mockup assets)
+  with animated steam, "Pause the steam" toggle, tilted
+  "Saved in this browser"/"Sample mode" stamp, hand-written caption;
+  grandma also fills the empty recipe-box state. Mockup-only judging
+  aids (compare toggle, "What changed" notes, mock bar) not shipped.
+- All behaviour preserved: sample/upload flows, consent gates,
+  IndexedDB local mode, truthful storage copy. Recipe detail page
+  restyled to match (same tape cards, pill progress).
+- Checks: typecheck pass, lint pass (44 files), `npm test` 53/53,
+  `build:local` pass; headless-Chrome screenshots (1000px/430px)
+  inspected — renders as the mockup; 430px right-edge clipping is the
+  known headless artifact.
+
+---
+
 ## Browser-local saving + stateless AI (28 Oct 2026)
 
 Daniel asked: save locally on the user's browser machine, and use an
