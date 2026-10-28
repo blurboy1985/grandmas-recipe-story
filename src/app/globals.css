@@ -1,28 +1,168 @@
-:root { color-scheme: light; --ink: #1c1917; --muted: #78716c; --line: #e7e5e4; --bg: #fafaf9; --card: #fff; --accent: #9a3412; }
+/* Grandma's Recipe Story — vintage recipe-box theme.
+   Aged index cards: warm kraft paper, sepia ink, ruled lines, a faded red
+   margin rule, ring holes, rubber-stamp badges and hand-lettered accents.
+   System font stacks only, so the book look works fully offline. */
+:root {
+  color-scheme: light;
+  --paper: #e7d7ae;
+  --paper-deep: #dcc493;
+  --card-paper: #f9f1dc;
+  --card-edge: #d9c298;
+  --ink: #43301d;
+  --ink-soft: #6f5138;
+  --muted: #93765a;
+  --rule-blue: rgba(110, 138, 152, 0.38);
+  --rule-red: rgba(176, 82, 56, 0.55);
+  --rust: #9c4a2f;
+  --rust-deep: #7c3a22;
+  --sage: #6d774f;
+  --error: #a02c1d;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --hand: "Bradley Hand", "Segoe Script", "Segoe Print", "Apple Chancery", "Snell Roundhand", cursive;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); }
-.shell { max-width: 44rem; margin: 0 auto; padding: 1rem 1rem 4rem; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 0.75rem; padding: 1rem; margin: 0.75rem 0; }
-.badge { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid var(--line); background: #fef3c7; }
+body {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(ellipse 42rem 18rem at 15% -4rem, rgba(255, 250, 230, 0.55), transparent 70%),
+    radial-gradient(ellipse 30rem 14rem at 95% 8rem, rgba(156, 118, 62, 0.20), transparent 70%),
+    radial-gradient(rgba(122, 90, 48, 0.10) 1px, transparent 1.4px),
+    linear-gradient(160deg, var(--paper) 0%, var(--paper-deep) 100%);
+  background-size: auto, auto, 22px 22px, auto;
+  min-height: 100vh;
+}
+a { color: var(--rust-deep); text-underline-offset: 2px; }
+a:hover { color: var(--rust); }
+
+/* Book cover masthead */
+.masthead {
+  border-bottom: 3px double var(--rust-deep);
+  background: linear-gradient(180deg, rgba(249, 241, 220, 0.65), rgba(249, 241, 220, 0.15));
+}
+.masthead-inner {
+  max-width: 46rem; margin: 0 auto; padding: 1.1rem 1rem 0.9rem;
+  display: flex; align-items: baseline; gap: 0.9rem; flex-wrap: wrap;
+}
+.masthead-title {
+  font-family: var(--hand); font-size: 1.9rem; line-height: 1; color: var(--rust-deep);
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.8);
+}
+.masthead-sub {
+  font-variant: small-caps; letter-spacing: 0.14em; font-size: 0.78rem; color: var(--ink-soft);
+}
+.shell { max-width: 46rem; margin: 0 auto; padding: 1rem 1rem 4rem; }
+
+/* Recipe index cards */
+.card {
+  position: relative;
+  background-color: var(--card-paper);
+  background-image:
+    linear-gradient(to right, transparent 0 2.3rem, var(--rule-red) 2.3rem, var(--rule-red) calc(2.3rem + 1px), transparent calc(2.3rem + 1px)),
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(1.55rem - 1px), var(--rule-blue) calc(1.55rem - 1px), var(--rule-blue) 1.55rem);
+  background-position: 0 0, 0 0.85rem;
+  border: 1px solid var(--card-edge);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(74, 52, 33, 0.22), 0 10px 24px rgba(74, 52, 33, 0.13);
+  padding: 1.05rem 1.1rem 1.1rem 3.15rem;
+  margin: 1rem 0;
+}
+.card::before { /* two ring holes along the top edge */
+  content: ""; position: absolute; top: 0.42rem; left: 0; right: 0; height: 15px; pointer-events: none;
+  background-image:
+    radial-gradient(circle 6px at 24% 50%, var(--paper-deep) 5px, rgba(74, 52, 33, 0.35) 6px, rgba(74, 52, 33, 0.12) 7px, transparent 8px),
+    radial-gradient(circle 6px at 76% 50%, var(--paper-deep) 5px, rgba(74, 52, 33, 0.35) 6px, rgba(74, 52, 33, 0.12) 7px, transparent 8px);
+}
+.card h2 {
+  font-size: 1.22rem; margin: 0.35rem 0 0.6rem; color: var(--rust-deep);
+  border-bottom: 1px solid var(--card-edge); padding-bottom: 0.3rem;
+}
+.card h3 { font-size: 1.02rem; margin: 0.9rem 0 0.35rem; font-variant: small-caps; letter-spacing: 0.06em; color: var(--ink-soft); }
+
+/* Rubber-stamp badge */
+.badge {
+  display: inline-block; font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--rust);
+  border: 2px solid var(--rust); border-radius: 3px; padding: 0.18rem 0.55rem;
+  transform: rotate(-2deg); background: rgba(249, 241, 220, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(249, 241, 220, 0.9), inset 0 0 0 3px rgba(156, 74, 47, 0.28);
+}
+
+h1 { font-size: 1.75rem; line-height: 1.2; margin: 0.6rem 0 0.4rem; color: var(--ink); }
+h1.recipe-title { font-family: var(--hand); font-size: 2.5rem; font-weight: 400; color: var(--rust-deep); }
+.hand { font-family: var(--hand); font-size: 1.25em; color: var(--ink-soft); }
+.intro { font-family: var(--hand); font-size: 1.45rem; line-height: 1.35; color: var(--ink-soft); margin: 0.4rem 0 0.2rem; }
+
 .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-label { display: block; font-size: 0.85rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
-input[type="text"], textarea, select { width: 100%; font: inherit; padding: 0.5rem; border: 1px solid var(--line); border-radius: 0.5rem; background: #fff; }
-textarea { min-height: 6rem; }
-button { font: inherit; font-weight: 600; padding: 0.55rem 0.9rem; border-radius: 0.6rem; border: 1px solid var(--ink); background: var(--ink); color: #fff; cursor: pointer; }
-button.secondary { background: #fff; color: var(--ink); }
-button:disabled { opacity: 0.5; cursor: default; }
-.muted { color: var(--muted); font-size: 0.85rem; }
-.error { color: #b91c1c; font-size: 0.9rem; }
-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th, td { text-align: left; padding: 0.4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-.unknown { font-weight: 700; color: var(--accent); }
+label { display: block; font-size: 0.92rem; font-weight: 600; margin: 0.55rem 0 0.25rem; color: var(--ink-soft); }
+input[type="text"], textarea, select {
+  width: 100%; font: inherit; font-size: 0.98rem; color: var(--ink);
+  padding: 0.45rem 0.55rem; margin-top: 0.2rem;
+  border: 1px solid var(--card-edge); border-radius: 3px;
+  background: rgba(255, 252, 243, 0.88);
+  box-shadow: inset 0 1px 3px rgba(74, 52, 33, 0.10);
+}
+input[type="checkbox"] { accent-color: var(--rust); width: 1.05rem; height: 1.05rem; vertical-align: -0.18rem; margin-right: 0.35rem; }
+input[type="file"] { font: inherit; font-size: 0.9rem; margin-top: 0.2rem; }
+textarea { min-height: 6.5rem; line-height: 1.55; }
+input:focus, textarea:focus, select:focus { outline: 2px solid rgba(156, 74, 47, 0.45); outline-offset: 1px; }
+
+button {
+  font: inherit; font-weight: 700; font-variant: small-caps; letter-spacing: 0.05em;
+  padding: 0.5rem 0.95rem; border-radius: 3px; cursor: pointer;
+  border: 1px solid var(--rust-deep); background: var(--rust); color: #fdf3da;
+  box-shadow: 0 1px 0 var(--rust-deep), 0 3px 7px rgba(74, 52, 33, 0.25);
+}
+button:hover { filter: brightness(1.07); }
+button.secondary { background: var(--card-paper); color: var(--rust-deep); border-color: var(--ink-soft); box-shadow: 0 1px 0 rgba(74, 52, 33, 0.4); }
+button:disabled { opacity: 0.55; cursor: default; filter: none; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+
+.muted { color: var(--muted); font-size: 0.88rem; }
+.error { color: var(--error); font-size: 0.92rem; font-weight: 600; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { font-variant: small-caps; letter-spacing: 0.07em; font-size: 0.8rem; color: var(--muted); }
+th, td { text-align: left; padding: 0.38rem 0.45rem; border-bottom: 1px dashed var(--card-edge); vertical-align: top; }
+.unknown { font-family: var(--hand); font-size: 1.12em; font-weight: 700; color: var(--rust); }
 audio { width: 100%; margin-top: 0.5rem; }
-ol.steps { padding-left: 1.25rem; }
-.progress { display: flex; gap: 0.35rem; list-style: none; padding: 0; margin: 0.5rem 0; font-size: 0.75rem; }
-.progress li { border: 1px solid var(--line); border-radius: 999px; padding: 0.2rem 0.55rem; background: #fff; }
-.progress li.done { background: #dcfce7; }
+ol.steps { padding-left: 1.3rem; }
+ol.steps li { margin: 0.3rem 0; }
+ol.steps li::marker { font-family: var(--hand); color: var(--rust); font-size: 1.1em; }
+.seg-id { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+.segments { list-style: none; padding-left: 0; }
+.segments li { margin: 0.22rem 0; }
+.source-text { white-space: pre-wrap; }
+.story { font-style: italic; }
+.quote { font-family: var(--hand); font-size: 1.3rem; color: var(--ink-soft); }
+
+/* Journey tabs, like dividers in the recipe box */
+.progress { display: flex; gap: 0.4rem; list-style: none; padding: 0; margin: 0.7rem 0; font-size: 0.8rem; flex-wrap: wrap; }
+.progress li {
+  font-variant: small-caps; letter-spacing: 0.08em; color: var(--ink-soft);
+  border: 1px solid var(--card-edge); border-bottom: none; border-radius: 5px 5px 0 0;
+  padding: 0.28rem 0.65rem; background: rgba(249, 241, 220, 0.55);
+}
+.progress li.done { background: var(--card-paper); color: var(--rust-deep); font-weight: 700; box-shadow: inset 0 -2px 0 var(--sage); }
+
+/* Saved cards in the recipe box */
+.box-list { list-style: none; padding: 0; margin: 0.4rem 0; }
+.box-list li { padding: 0.45rem 0; border-bottom: 1px dashed var(--card-edge); }
+.box-list li:last-child { border-bottom: none; }
+.box-list a { font-size: 1.05rem; font-weight: 700; }
+
 @media print {
-  .noprint { display: none !important; }
+  body { background: #fff; }
+  .noprint, .masthead { display: none !important; }
   .shell { max-width: none; padding: 0; }
-  .card { border: none; padding: 0; margin: 0 0 1rem; }
+  .card { background: #fff; border: none; box-shadow: none; padding: 0; margin: 0 0 1rem; }
+  .card::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
 }

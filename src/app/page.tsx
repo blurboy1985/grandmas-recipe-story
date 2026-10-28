@@ -52,12 +52,12 @@ export default function Home() {
 
   return (
     <main>
-      <h1>Grandma&apos;s Recipe Story</h1>
+      <p className="intro">From her voice, to your kitchen table.</p>
       <p><span className="badge">SAMPLE MODE</span></p>
-      <p className="muted">Milestone A: the sample journey runs without an API key. Saving is ordinary code, never an AI call. Live transcription and extraction arrive in later milestones.</p>
+      <p className="muted">This recipe box keeps what your relative actually said — vague spoonfuls and all — and asks about the rest instead of inventing it. The sample card below is fictional and runs without an API key. Saving is ordinary code, never an AI call.</p>
 
       <section className="card">
-        <h2>1. Start a sample card</h2>
+        <h2>1 · Start a sample card</h2>
         <form onSubmit={createSample}>
           <label>Family member&apos;s preferred name<input type="text" value={cookName} onChange={(e) => setCookName(e.target.value)} placeholder="e.g. Mei" /></label>
           <label>Dish name (optional for sample)<input type="text" value={dishName} onChange={(e) => setDishName(e.target.value)} placeholder="Defaults to the fictional sample dish" /></label>
@@ -69,8 +69,8 @@ export default function Home() {
       </section>
 
       <section className="card">
-        <h2>2. Or upload a short WAV (manual transcript)</h2>
-        <p className="muted">Supported: mono PCM 16-bit WAV, 1–5 minutes, at most 20 MB. Live transcription arrives in Milestone C; uploaded audio keeps a typed transcript you approve yourself.</p>
+        <h2>2 · Or add a real recording</h2>
+        <p className="muted">Supported: mono PCM 16-bit WAV, 1–5 minutes, at most 20 MB. Transcribe it with Voice on the card, or type the words yourself — either way, you approve the transcript before anything is extracted from it.</p>
         <form onSubmit={uploadWav}>
           <label>Audio file (.wav)<input type="file" name="audio" accept=".wav,audio/wav" required /></label>
           <label>Your name<input type="text" name="uCook" required /></label>
@@ -82,10 +82,10 @@ export default function Home() {
       </section>
 
       <section className="card">
-        <h2>Saved recipes</h2>
-        {recipes.length === 0 ? <p className="muted">No saved recipes yet. Reloading the app preserves saved cards.</p> : (
-          <ul>{recipes.map((r) => (
-            <li key={r.id}><a href={`/recipes/${r.id}`}>{r.dishName || "(untitled)"}</a> <span className="muted">· {r.mode} · {r.processingState}{r.reviewState ? ` · ${r.reviewState}` : ""}</span></li>
+        <h2>The recipe box</h2>
+        {recipes.length === 0 ? <p className="muted">No cards tucked in yet. Saved cards stay in the box when you reload or reopen the app.</p> : (
+          <ul className="box-list">{recipes.map((r) => (
+            <li key={r.id}><a href={`/recipes/${r.id}`}>{r.dishName || "(untitled)"}</a> <span className="muted">· {r.mode === "sample" ? "sample card" : "recording"} · {r.processingState}{r.reviewState ? ` · ${r.reviewState}` : ""}</span></li>
           ))}</ul>
         )}
       </section>

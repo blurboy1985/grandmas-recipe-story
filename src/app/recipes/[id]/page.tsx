@@ -85,8 +85,8 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
   return (
     <main>
-      <p className="noprint"><a href="/">← All recipes</a></p>
-      <h1>{detail.dishName || "(untitled)"}</h1>
+      <p className="noprint"><a href="/">← Back to the recipe box</a></p>
+      <h1 className="recipe-title">{detail.dishName || "(untitled)"}</h1>
       <p>
         <span className="badge">{detail.mode === "sample" ? "SAMPLE MODE — fictional data" : "UPLOADED RECORDING — live transcription"}</span>
       </p>
@@ -125,9 +125,9 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       <section className="card">
         <h2>Transcript review</h2>
         <h3>Original (kept unchanged)</h3>
-        <p>{detail.originalTranscript?.text || <span className="muted">{detail.mode === "sample" ? "No transcript yet — type it below, then approve." : "No transcript yet — transcribe above, or type it below, then approve."}</span>}</p>
+        <p className="source-text">{detail.originalTranscript?.text || <span className="muted">{detail.mode === "sample" ? "No transcript yet — type it below, then approve." : "No transcript yet — transcribe above, or type it below, then approve."}</span>}</p>
         {detail.originalTranscript ? (
-          <ul className="muted">{detail.originalTranscript.segments.map((s) => <li key={s.id}><strong>{s.id}</strong> · {s.text}</li>)}</ul>
+          <ul className="segments muted">{detail.originalTranscript.segments.map((s) => <li key={s.id}><span className="seg-id">{s.id}</span> · {s.text}</li>)}</ul>
         ) : null}
         <label>Editable transcript<textarea value={editText} onChange={(e) => setEditText(e.target.value)} /></label>
         <div className="row noprint">
@@ -161,24 +161,24 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
       {detail.draft ? (
         <section className="card">
-          <h2>Recipe draft</h2>
+          <h2>The recipe card</h2>
           <h3>Ingredients</h3>
-          <table><thead><tr><th>Ingredient</th><th>Quantity</th><th>Source words</th></tr></thead><tbody>
+          <table><thead><tr><th>Ingredient</th><th>Quantity</th><th>In her words</th></tr></thead><tbody>
             {detail.draft.output.ingredients.map((g, i) => (
               <tr key={i}><td>{g.name}{g.needs_confirmation ? " *" : ""}</td>
                 <td>{g.quantity_text ?? <span className="unknown">unknown</span>}</td>
-                <td><span className="muted">“{g.original_words}” · {g.source_segment_ids.join(", ")}</span></td></tr>
+                <td><span className="muted">“{g.original_words}” · <span className="seg-id">{g.source_segment_ids.join(", ")}</span></span></td></tr>
             ))}
           </tbody></table>
-          <h3>Steps</h3>
-          <ol className="steps">{detail.draft.output.steps.map((s, i) => <li key={i}>{s.instruction} <span className="muted">· {s.source_segment_ids.join(", ")}</span></li>)}</ol>
+          <h3>Method</h3>
+          <ol className="steps">{detail.draft.output.steps.map((s, i) => <li key={i}>{s.instruction} <span className="seg-id">· {s.source_segment_ids.join(", ")}</span></li>)}</ol>
           <h3>Family story (paraphrase)</h3>
-          <p>{detail.draft.output.story.paraphrase}</p>
-          {detail.draft.output.story.quotes.map((q, i) => <p key={i} className="muted">Verified quote ({q.source_segment_id}): “{q.text}”</p>)}
+          <p className="story">{detail.draft.output.story.paraphrase}</p>
+          {detail.draft.output.story.quotes.map((q, i) => <p key={i} className="quote">“{q.text}” <span className="seg-id">verified quote · {q.source_segment_id}</span></p>)}
           <p className="muted">* needs family confirmation. Generated prose is a paraphrase; only the verified quotes are exact words.</p>
         </section>
       ) : (
-        <section className="card"><h2>Recipe draft</h2><p className="muted">No draft yet — generate one above once a transcript is approved.</p></section>
+        <section className="card"><h2>The recipe card</h2><p className="muted">Nothing written on this card yet — generate a draft above once a transcript is approved.</p></section>
       )}
 
       {detail.clarifications.length > 0 ? (
@@ -207,7 +207,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       </section>
 
       <section className="card">
-        <h2>Saved card</h2>
+        <h2>Keep this card</h2>
         <p className="muted">Review state: {detail.draft?.reviewState ?? "no draft"}. “Confirmed” means the family reviewed it — unknowns stay visible and it is not a proof of factual accuracy. New answers, corrections, or transcript edits return the draft to “draft” until re-reviewed.</p>
         <div className="row noprint">
           <button className="secondary" onClick={() => void act({ action: "review", reviewState: "reviewed_with_unknowns" })}>Mark reviewed</button>
