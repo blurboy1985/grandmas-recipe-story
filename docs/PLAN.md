@@ -1,38 +1,36 @@
 # Implementation plan
 
-Initial plan derived from the supplied guide, 27 October 2026. **Architecture finalized 27 October 2026 (see `docs/ARCHITECTURE.md`).** Milestones A–C are code-complete (C not live-proven); D next. See `docs/HANDOFF.md` for the latest state.
+Initial plan derived from the supplied guide, 27 October 2026. **Architecture finalized 27 October 2026 (see `docs/ARCHITECTURE.md`).** Milestones A–D are code-complete (C not live-proven); Wonder final review completed 28 October 2026 (see `docs/REVIEW.md`). See `docs/HANDOFF.md` for the latest state.
 
-Setup follow-up: user profiles are now installed. Daniel encountered Meta's
-recursive tool-parameter schema rejection. Use `scripts/muse-codex.py` for fresh
-Muse sessions; it excludes inherited apps/plugins/MCP tools per process without
-changing base defaults or security settings. Local checks passed; live inference
-and the exact offending inherited tool remain unverified. See `SETUP.md` and the
-latest section of `HANDOFF.md` before beginning architecture. The launcher now
-uses bare CLI override paths and validates all MCP states with the real CLI before
-the key prompt; this corrects the first launcher's local `invalid transport` bug.
+Tooling note (28 Oct 2026): this project now uses **Muse** instead of
+Codex. The human starts each session with the intended model (Spark 1.3
+medium for routine work, Wonder 1.0 high for architecture/review). The old
+Codex profiles and `scripts/muse-codex.py` launcher — built around Meta's
+recursive tool-parameter schema rejection — are legacy history; see
+`docs/SETUP.md`.
 
 The product promise is to preserve what the relative actually said and make
 uncertainty visible. The required journey is upload → transcript review → recipe
 and story draft → clarification/correction → saved card with original audio.
 
-| Phase | Coding profile | Status | Required evidence before completion |
+| Phase | Coding model (Muse) | Status | Required evidence before completion |
 | --- | --- | --- | --- |
-| Setup | Existing session | Partial | Versions/docs checked; profiles installed in user config; genuine text/audio smoke results; routing checked after restart |
+| Setup | — | Complete | Versions/docs checked; genuine text/audio smoke results recorded |
 | Architecture | Wonder high | Complete (docs only) | `ARCHITECTURE.md` + finalized `DATA_MODEL.md`/`MODEL_USAGE.md`: state machine, extraction JSON Schema, SQLite/media design, cache/dedup, recovery/deletion, open questions recorded |
 | A: sample interface | Spark medium | Code-complete | No-key flow, persistent save/reopen, playback/print, mobile review, typecheck/build |
 | B: grounded extraction | Spark medium | Code-complete, live-verified once | Real text request, validated sources/schema, semantic cases, cache/dedup checks |
 | C: transcription | Spark medium | Code-complete, not live-proven | Validated real WAV flow and failure handling, three recording evaluations |
 | D: clarify/save/print | Spark medium | Code-complete | Versioned family answers/corrections, visible unknowns, reopen/delete/playback/print |
 | E: browser recording | Spark; Wonder if stuck | Optional, not started | Only after A–D pass; conversion and Safari/iPhone + Chrome checks |
-| Final review | Wonder then Spark fixes | Not started | Evidence-based review, genuine full live flow, family review, fresh-clone checks |
+| Final review | Wonder then Spark fixes | Complete 28 Oct 2026 | `docs/REVIEW.md`: two Medium + three Low findings fixed with regression tests; live-flow/family/fresh-clone gates remain Daniel-owned |
 | Submission package | Wonder review, Spark edits | Drafts prepared | Public repo, accessible ≤3-minute video, truthful implemented-feature claims |
 
-## Next bounded task: see HANDOFF (Daniel decision)
+## Next bounded task: see HANDOFF
 
-Milestones A–D are code-complete. Either run optional Milestone E (browser
-recording; needs FFmpeg, HTTPS phone setup, Safari/iPhone + Chrome checks) or
-go straight to the Wonder final review, then the submission package. The
-handoff names the exact next command once Daniel chooses.
+Final review is done. Next is the submission package (Daniel-gated items:
+licence, screenshots, demo video, live Voice proof), or optional Milestone E
+(browser recording; needs FFmpeg, HTTPS phone setup, Safari/iPhone + Chrome
+checks) if Daniel chooses it first.
 
 Use one Node.js process, Next.js TypeScript, server routes, SQLite and media on
 private persistent disk. Server audio/filesystem routes require the Node runtime.

@@ -14,6 +14,14 @@ choices for the local MVP. It does not implement Milestone A.
 | Media | Private files under `DATA_DIR` (outside `public/`), served only via controlled Node routes | Family media must not be statically public. Routes check recording ID, consent state and file containment before streaming. |
 | Tests (Milestone A+) | Vitest for unit/validation, Playwright for the sample journey | Named as intent only; verify current setup docs at implementation time. Not installed in this task. |
 
+> **Implementation note (28 Oct 2026, final review):** as built, the server
+> code is flat modules under `src/server/` (`db.ts`, `store.ts`, `audio.ts`,
+> `segments.ts`, `validate.ts`, `extraction-*.ts`, `meta-extract.ts`,
+> `meta-transcribe.ts`, `sample-fixture.ts`) rather than the `meta|db|media|
+> recipes/` folders sketched below, and tests use the built-in `node:test`
+> runner (`node --test tests/*.test.ts`), not Vitest/Playwright. Behavior
+> matches this document; only the layout differs. See `docs/REVIEW.md`.
+
 Sources checked 27 Oct 2026: S1 Next.js Route Segment Config
 (https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config);
 S2 OpenAI JS SDK README custom `baseURL`/`apiKey`

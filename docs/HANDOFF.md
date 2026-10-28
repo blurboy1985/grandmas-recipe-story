@@ -1,6 +1,90 @@
-# Handoff — Milestone D complete; Daniel decision next (E vs final review)
+# Handoff — final review done; submission package next
 
 Updated 28 October 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Wonder final review + vintage redesign + Muse playbook (28 Oct 2026)
+
+Daniel asked: run the Wonder final review, redesign the site with a vintage
+recipe-book look, update the guide/playbook from Codex to Muse, then
+commit and push. No live Meta calls made in-session.
+
+### Final review (see `docs/REVIEW.md` for full findings)
+
+No High-severity defects. Grounding, approval gating, cache/dedup, secret
+handling, media validation and delete/recovery all verified against
+`docs/PLAN.md`. Fixed, each with a regression test observed failing first:
+
+- M1 (Medium): tombstone sweep never retried under the default relative
+  `DATA_DIR` (`startsWith` prefix mismatch in `db.ts`) — fixed with absolute
+  path resolution; new `tests/sweep-relative.test.ts`.
+- M2 (Medium): re-transcription overwrote the approved original transcript
+  in place, keeping its approval — approval now cleared in the same
+  transaction (`store.ts`); new test in `tests/transcription.test.ts`.
+- L1: dead `fresh || true` condition in `db.ts` startup.
+- L2: misleading `sampleMode: true` removed from `GET /api/recipes`.
+- L3: blank clarification answers rejected (`empty_answer` 400); new test
+  in `tests/family-evidence.test.ts`.
+
+Noted, not fixed (documented in `docs/REVIEW.md`): no HTTP Range on media,
+dish-photo upload unwired, WAV duration trusts declared chunk size (provider
+revalidates), no auth (local-MVP design).
+
+### Vintage recipe-book redesign
+
+- `src/app/globals.css` rewritten: aged index cards with ruled lines, red
+  margin rule and ring holes, sepia ink, rubber-stamp mode badges,
+  hand-lettered accents — system font stacks only (offline-safe), print
+  stays a clean card.
+- `layout.tsx`: book-cover masthead + truthful metadata. `page.tsx`: new
+  intro/copy, "recipe box" list with human mode labels. Recipe page:
+  hand-lettered dish title, "The recipe card" (Ingredients / Method / story
+  with verified quotes in hand font), segment IDs in mono.
+- Verified visually in headless Chrome 156 (fresh throwaway profiles):
+  430px and 1000px screenshots render as a vintage recipe card; narrow-shot
+  right-edge clipping is the known headless artifact (wide shot and the
+  Milestone D element-level pass show no overflow).
+
+### Playbook: Codex → Muse
+
+- Build guide: retitled (filename kept), §2/§4–§7/§17–§21 now describe
+  starting Muse with Spark medium / Wonder high; Codex profile setup
+  marked legacy; submission drafts updated (development began on Codex
+  27 Oct, switched 28 Oct).
+- `AGENTS.md`, `docs/PLAN.md` (A–D complete, review complete),
+  `docs/MODEL_USAGE.md`, `docs/SETUP.md` (Muse workflow on top; Codex
+  sections marked legacy), `docs/SUBMISSION.md`, `README.md` (status,
+  47 tests / 9 suites, review + redesign section), `docs/ARCHITECTURE.md`
+  (implementation-layout note). Historical handoff/feedback entries left
+  untouched. `scripts/muse-codex.py` kept as a legacy artifact.
+
+### Checks run (actual results)
+
+- New regression tests: 3/3 failed pre-fix, pass post-fix.
+- `npm run typecheck`: pass. `npm run lint`: pass (39 files).
+  `npm test`: 47/47 pass (9 suites). `npm run build`: pass (9 routes).
+- Live HTTP smoke (throwaway `/tmp` script, deleted after): 14/14 pass on
+  `next start` port 3107 — masthead/vintage copy served, sample create →
+  draft with null quantities → audio route → blank-answer 400 → delete →
+  404. Server stopped; smoke recipe deleted; /tmp artifacts removed.
+
+### Remaining / next task
+
+Submission package (Daniel-gated): live Voice proof
+(`scripts/transcribe-smoke.mjs` + three consented WAVs + one full live
+flow), one family-reviewed recipe, licence choice, screenshots, ≤3-minute
+demo video, fresh-clone check. Optional Milestone E remains unstarted.
+No form or terms submitted.
+
+Start the next session in Muse with Spark (medium) for submission
+edits, or Wonder (high) if a further review pass is wanted:
+
+```zsh
+cd /Users/danielquek/grandma-receipe-story
+# Start Muse (Spark medium), then:
+# "Read AGENTS.md and docs/HANDOFF.md. Prepare only the submission package."
+```
 
 ---
 

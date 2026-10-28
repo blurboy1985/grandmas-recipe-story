@@ -25,8 +25,8 @@ than inventing quantities. Family corrections, saved cards and browser printing
 form the intended complete journey. **The app is not implemented yet.**
 
 Planned Meta products: Voice Transcribe for audio; Spark 1.3 for reviewed-text
-extraction. Spark and Wonder through Codex are development roles, separate from
-runtime. Currently no authenticated Meta inference has been completed. Rewrite
+extraction. Spark and Wonder through Muse are development roles,
+separate from runtime (development began on Codex, 27 Oct 2026). Currently no authenticated Meta inference has been completed. Rewrite
 the final product/model narrative from observed code paths and real requests.
 
 Why the models matter, as a design rationale: speech transcription can make an

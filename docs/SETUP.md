@@ -3,6 +3,28 @@
 Checked 27 October 2026, Singapore time. This is a record of actual local checks;
 documentation verification is separate from authenticated API access.
 
+**Update 28 October 2026 — Muse is the coding harness now.** Start each
+work session in Muse with the model the task needs, from the project
+folder:
+
+```zsh
+cd /Users/danielquek/grandma-receipe-story
+# Routine implementation (default): start Muse with Muse Spark 1.3, medium.
+# Architecture / final review: start Muse with Muse Wonder 1.0, high.
+```
+
+Then open with: "Read AGENTS.md and docs/HANDOFF.md. Implement and verify only
+<the current bounded task>." Model switching means starting a new session;
+update `docs/HANDOFF.md` before switching. Keep approval and sandbox
+protections on. A model's self-description is not routing proof — the Meta
+dashboard remains the routing check.
+
+Everything below about Codex profiles, `scripts/install-muse-profiles.py` and
+`scripts/muse-codex.py` is the **legacy 27 Oct 2026 setup**, kept as the
+truthful record of how the project started. Do not use it for new sessions.
+The app's runtime key handling (hidden helper, smoke scripts) is unchanged
+and still current.
+
 | Item | Observed result |
 | --- | --- |
 | OS / architecture | macOS 27.0.1, build 26A434, Darwin arm64 |
@@ -42,7 +64,7 @@ account access, successful requests, remaining credits or actual coding routing.
 Recheck docs when implementing each integration. Pricing is not independently
 revalidated for this setup task; guide estimates must not be treated as measured spend.
 
-## Install profiles without changing defaults
+## Legacy: install Codex profiles without changing defaults (27 Oct 2026, superseded)
 
 Templates are in `config/muse/` and exactly follow section 5 of the guide.
 Spark uses medium effort; Wonder uses high. Both use provider `grandma_meta`,
@@ -164,7 +186,7 @@ credential-redaction checks. Mock reports were isolated in temporary folders.
 Installer preservation/conflict checks, Markdown links and Git-ignore coverage
 passed. These checks do not establish live access.
 
-## Restart with the correct profile
+## Legacy: restart with the correct Codex profile (27 Oct 2026, superseded)
 
 Architecture comes next, so start Wonder in a new process:
 
@@ -195,7 +217,7 @@ python3 scripts/muse-codex.py grandma-spark "Read AGENTS.md and docs/HANDOFF.md.
 Starting these profiles never changes the default provider in base configuration.
 This setup session has not switched to Muse.
 
-## Recursive JSON schema error
+## Legacy: recursive JSON schema error (Codex era, 27 Oct 2026)
 
 Follow-up checked 27 October 2026. Both user profiles now exist and match the
 repository templates. The base config hash still matches the original. Earlier

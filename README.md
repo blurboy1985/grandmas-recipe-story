@@ -3,19 +3,27 @@
 A planned mobile-friendly app for preserving a short cooking recording as an
 editable recipe and family story, with original audio and visible uncertainty.
 
-**Status (27 Oct 2026): Milestones A–C are code-complete — sample flow,
-Spark extraction, and Voice transcription. One live Spark extraction verified;
-live Voice transcription not yet verified; no demo video yet.**
+**Status (28 Oct 2026): Milestones A–D are code-complete — sample flow,
+Spark extraction, Voice transcription, and family evidence/print. Wonder
+final review done (see [review](docs/REVIEW.md)); the interface now wears a
+vintage recipe-box design. One live Spark extraction verified; live Voice
+transcription not yet verified; no demo video yet.**
 
 The implementation guide is
-[Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md](Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md).
+[Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md](Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md)
+(now the Muse playbook; filename kept for link stability).
 Start with [setup](docs/SETUP.md), [plan](docs/PLAN.md) and [handoff](docs/HANDOFF.md).
 
-On Daniel's Mac, run in your own terminal:
+Development happens in **Muse**: Daniel starts each session from the
+project folder with the model the task needs — Muse Spark 1.3 (medium) for
+routine work, Muse Wonder 1.0 (high) for architecture and review — then
+opens with "Read AGENTS.md and docs/HANDOFF.md" plus one bounded task. Model
+switching means starting a new session. See [setup](docs/SETUP.md).
+
+For the optional live API smoke (Daniel's terminal, hidden key prompt):
 
 ```zsh
 cd /Users/danielquek/grandma-receipe-story
-python3 scripts/install-muse-profiles.py
 zsh scripts/with-meta-key.zsh node scripts/meta-smoke.mjs
 ```
 
@@ -24,21 +32,9 @@ sends one short Spark request and, unless authentication fails, one synthetic
 speech recording to Voice Transcribe. It records sanitized results in ignored
 `data/setup/meta-smoke-results.json`. No family recording is required.
 
-Then start the bounded architecture session:
-
-```zsh
-python3 scripts/muse-codex.py grandma-wonder "Read AGENTS.md and docs/HANDOFF.md. Complete only the next bounded architecture task; do not implement Milestone A yet."
-```
-
-Both profiles preserve the existing default provider. Creating files does not
-change the running model. `--no-daemon` starts a separate CLI process rather than
-attaching to the shared background server. Verify provider/model routing during
-the new session and inspect Meta dashboard usage.
-
-The launcher excludes inherited apps, plugins and configured MCP servers for this
-Muse process to avoid Meta's recursive tool-schema rejection. It uses the hidden
-key helper and leaves user configuration, approvals and sandbox settings intact.
-See [the compatibility diagnosis](docs/SETUP.md#recursive-json-schema-error).
+The older Codex profiles and `scripts/muse-codex.py` launcher (27 Oct 2026)
+are legacy history — they worked around Meta's recursive tool-schema
+rejection; see [the compatibility diagnosis](docs/SETUP.md#legacy-recursive-json-schema-error-codex-era-27-oct-2026).
 
 The hackathon scope is **Indie developer track / Build for Your World**, a public
 GitHub repository, and an accessible video of at most three minutes.
@@ -73,7 +69,7 @@ Checks (all passing in the implementation session):
 ```zsh
 npm run typecheck
 npm run lint           # offline project guard (privacy + grounding)
-npm test               # node:test, 44 assertions across 8 suites
+npm test               # node:test, 47 tests across 9 suites
 npm run build
 ```
 
@@ -152,3 +148,18 @@ delete, original-audio playback, and print were verified at store/handler
 level plus `next build` output, a 14-check live HTTP smoke, and a
 headless-Chrome pass (mobile/desktop screenshots, print-to-PDF,
 print-media emulation with zero overflow at 390px).
+
+## Final review + vintage recipe-box design (28 Oct 2026)
+
+The Wonder final review ([docs/REVIEW.md](docs/REVIEW.md)) checked grounding,
+unknowns, source validity, secrets, media validation/deletion, cost/retry
+limits and persistence. Two Medium findings (tombstone sweep under the
+default relative `DATA_DIR`; re-transcription inheriting approval) and three
+Low findings were fixed, each with a regression test that failed first.
+
+The interface was also redesigned as a vintage recipe box: aged index cards
+with ruled lines and ring holes, sepia ink, rubber-stamp mode badges and
+hand-lettered accents — system font stacks only, so it works offline, and
+the print view stays a clean card. Development now runs in Muse
+(Spark medium / Wonder high); the Codex-era setup is legacy history in
+[docs/SETUP.md](docs/SETUP.md).

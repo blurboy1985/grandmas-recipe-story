@@ -1,6 +1,13 @@
-# Grandma's Recipe Story — Codex CLI + Muse Build Guide
+# Grandma's Recipe Story — Muse Build Guide
 
-Prepared for Daniel • Updated 27 October 2026 • Singapore time
+Prepared for Daniel • Updated 28 October 2026 • Singapore time
+
+Revision 3 (28 Oct 2026): coding harness switched from Codex CLI to Muse.
+The human starts each Muse session with the intended Muse model
+(Spark 1.3 medium for routine work; Wonder 1.0 high for architecture, hard
+debugging and final review). The Codex profile setup in earlier revisions is
+legacy history (see `docs/SETUP.md`); the app's runtime models are unchanged.
+Filename kept for link stability.
 
 Revision 2: aligned to the supplied final submission form: Indie developer track, Build for Your World, public GitHub repository and required three-minute demo. Sections 18–21 contain field drafts and submission checks.
 
@@ -37,9 +44,9 @@ Later versions: long cooking videos, conversational real-time interviewing, fami
 
 ## 2. Allocate models deliberately
 
-There are two independent budgets: the coding assistant on your computer and the AI calls inside the app. Changing Codex's model does not change the app's model.
+There are two independent budgets: the coding assistant on your computer and the AI calls inside the app. Changing the coding session's model does not change the app's model.
 
-### Coding through Codex
+### Coding through Muse
 
 | Work | Model | Effort to start with | When to use |
 | --- | --- | --- | --- |
@@ -52,7 +59,7 @@ There are two independent budgets: the coding assistant on your computer and the
 
 Suggested starting allocation: about 80% of coding turns on Spark and 20% on Wonder. This is a planning target, not a quality guarantee or a measured optimum.
 
-Run one task at a time. Do not launch a swarm for this app. Profiles are manual choices, not an automatic router; select the profile when starting a coding session.
+Run one task at a time. Do not launch a swarm for this app. The model is a manual choice, not an automatic router; select it when starting a Muse session.
 
 ### Models inside the app
 
@@ -77,12 +84,12 @@ Recommended implementation:
 - Next.js + TypeScript for the web UI and server routes.
 - The OpenAI JavaScript SDK configured with Meta's base URL; this is a client library, and requests go to Meta.
 - Zod for runtime validation.
-- SQLite for recipe metadata and job status; a small supported SQLite library selected by Codex.
+- SQLite for recipe metadata and job status; a small supported SQLite library selected by the coding assistant.
 - Files on disk for audio and uploaded dish photos.
 - FFmpeg/ffprobe for media conversion and validation when browser recording is added.
 - Vitest for meaningful unit/integration checks and Playwright for the core browser flow.
 
-Pin installed versions in the lockfile. Ask Codex to check current library documentation before choosing package versions or API signatures.
+Pin installed versions in the lockfile. Ask the coding assistant to check current library documentation before choosing package versions or API signatures.
 
 For the first local version, use a single Node.js server process and a persistent data directory. Store media outside the public directory and serve it through controlled app routes. Use Node runtime for filesystem/audio routes.
 
@@ -96,17 +103,16 @@ Assume Bash on Ubuntu, macOS or WSL for the commands below.
 
 1. Confirm access to Meta Model API and the models in section 2.
 2. Check your hackathon credits and any billing limits in the dashboard.
-3. Have Node.js/npm, Git, Codex CLI and optionally GitHub CLI available.
+3. Have Node.js/npm, Git, Muse and optionally GitHub CLI available.
 4. In your terminal, check:
 
 ~~~bash
 node --version
 npm --version
 git --version
-codex --version
 ~~~
 
-If Codex is missing, use the current official Codex installation guide. This guide uses the profile format documented for Codex 0.134.0 and later. If you have an older version, update using its supported installation method or use Meta's one-off configuration examples. Do not mix old nested profile tables with the new format. [S1, S2]
+If Muse is missing, use its current official installation guide.
 
 5. Prepare one consented 1–3 minute recording, a dish photo and a human-written reference recipe.
 6. Start with English, Mandarin, Malay or Tamil. Voice Transcribe documents these languages and code-switching. Hokkien, Cantonese and Teochew are not in its listed 25 languages. Do not promise reliable support for those dialects without testing. [S5]
@@ -120,79 +126,50 @@ Ask your relative:
 
 Record somewhere quiet. The app should later ask for informed permission to send a recording to Meta.
 
-## 5. Connect Codex to Meta without changing your default setup
+## 5. Start Muse with the right Muse model
 
-Create two user-level profile files. These names are examples; choose unused names if they already exist.
+Coding runs in Muse. There are no profile files to install: the human
+selects the model and effort when starting a session, from the project folder.
 
-### Spark profile: ~/.codex/grandma-spark.config.toml
+Routine implementation (default):
 
-~~~toml
-model = "muse-spark-1.3"
-model_provider = "grandma_meta"
-model_reasoning_effort = "medium"
-model_context_window = 1048576
-model_auto_compact_token_limit = 200000
-
-[model_providers.grandma_meta]
-name = "Meta Model API"
-base_url = "https://api.meta.ai/v1"
-env_key = "MODEL_API_KEY"
-wire_api = "responses"
-requires_openai_auth = false
-supports_websockets = false
+~~~zsh
+cd /Users/danielquek/grandma-receipe-story
+# Start Muse with Muse Spark 1.3, medium effort.
 ~~~
 
-### Wonder profile: ~/.codex/grandma-wonder.config.toml
+Architecture, difficult debugging, or the final review:
 
-~~~toml
-model = "muse-wonder-1.0"
-model_provider = "grandma_meta"
-model_reasoning_effort = "high"
-model_context_window = 1048576
-model_auto_compact_token_limit = 200000
-
-[model_providers.grandma_meta]
-name = "Meta Model API"
-base_url = "https://api.meta.ai/v1"
-env_key = "MODEL_API_KEY"
-wire_api = "responses"
-requires_openai_auth = false
-supports_websockets = false
+~~~zsh
+cd /Users/danielquek/grandma-receipe-story
+# Start Muse with Muse Wonder 1.0, high effort.
 ~~~
 
-The 200,000-token compaction threshold is a conservative project choice, not a Meta requirement. Prefer fresh, bounded sessions with a short handoff document rather than filling the 1M window.
+Open every session with the same grounding prompt shape:
 
-These are user-level files, not project .codex/config.toml files. Current Codex documentation restricts provider configuration at project level. Profiles layer on top of existing settings, so inspect any inherited settings that conflict. Keep normal approval and sandbox protections enabled. [S1, S2]
+> Read AGENTS.md and docs/HANDOFF.md. Implement and verify only <the current bounded task>.
 
-Enter your API key without displaying it or typing it into shell history:
+Rules that carry over from the Codex era:
 
-~~~bash
-read -r -s -p "Meta API key: " MODEL_API_KEY
-echo
-export MODEL_API_KEY
-~~~
+- Prefer fresh, bounded sessions with a short handoff document over one long
+  session. Complete the current task, update `docs/HANDOFF.md`, exit, then
+  start the other model. A running session does not switch models mid-task.
+- Before a long build, run a tiny coding task and inspect the Meta dashboard
+  for model usage. A model's self-description does not verify routing.
+- Keep Muse's normal approval policy and sandbox protections enabled.
+- The coding key (if any) never goes in chat, command arguments, or the repo.
+  The app's runtime key stays the separate server-only `META_API_KEY`, entered
+  through the hidden local-terminal helper. Never use a `NEXT_PUBLIC_` prefix.
 
-Then launch from the project folder:
-
-~~~bash
-codex --profile grandma-spark
-~~~
-
-For architecture or difficult debugging:
-
-~~~bash
-codex --profile grandma-wonder
-~~~
-
-Meta documents Codex with wire_api="responses" and its API base https://api.meta.ai/v1. [S3]
-
-Before a long build, run a tiny coding task and inspect the Meta dashboard for model usage. A model's self-description does not verify routing. If Codex shows a catalog/discovery error, stop and consult the installed version's help and Meta's current Codex instructions; do not treat a failed refresh as a successful connection. Meta's app-server documentation describes a separate model-catalog workaround for that surface; use it only if the same problem applies to your version.
-
-Model changes: complete the current task, update docs/HANDOFF.md, exit, then start the other profile. Do not assume a running session picks up edited profile files.
+Historical note: the 27 Oct 2026 Codex setup (user profiles
+`grandma-spark`/`grandma-wonder` pointing at `https://api.meta.ai/v1` with
+`wire_api="responses"`, plus the `scripts/muse-codex.py` launcher that worked
+around Meta's recursive tool-schema rejection) is preserved in
+`docs/SETUP.md` as legacy. Do not use it for new sessions.
 
 ## 6. Check API access before building the interface
 
-First confirm the app's main text model with a minimal server-side call to Meta. You can ask Codex to create an ignored local smoke-test script using the official quickstart.
+First confirm the app's main text model with a minimal server-side call to Meta. You can ask Muse to create an ignored local smoke-test script using the official quickstart.
 
 Expected:
 - A successful short Spark response.
@@ -233,7 +210,7 @@ Create AGENTS.md with these project rules:
 
 ~~~text
 - Implement only the current milestone.
-- Default to Muse Spark for routine coding. The human selects Codex profiles.
+- Default to Muse Spark for routine coding. The human selects the Muse model/effort when starting a session.
 - Do not spawn additional agents unless explicitly requested.
 - Verify current Meta API schemas before implementing integrations.
 - Keep API keys and family recordings out of Git and ordinary logs.
@@ -301,9 +278,9 @@ APP_MODE=sample
 DATA_DIR=./data
 ~~~
 
-META_API_KEY is our application's variable name. MODEL_API_KEY is used by the Codex profile. Both are Meta API credentials; separate keys are preferable for tracking/revocation, though one key can be used during a local prototype. Never use a NEXT_PUBLIC_ prefix for a key.
+META_API_KEY is our application's variable name. (The legacy Codex setup used a separate MODEL_API_KEY for the coding harness.) Both are Meta API credentials; separate keys are preferable for tracking/revocation, though one key can be used during a local prototype. Never use a NEXT_PUBLIC_ prefix for a key.
 
-Implement one server-only Meta adapter. For one-shot extraction, Meta's Chat Completions JSON Schema examples are suitable; the Codex harness itself continues using Responses. A package named openai does not mean requests go to OpenAI—configure baseURL and key explicitly. [S7, S8]
+Implement one server-only Meta adapter. For one-shot extraction, Meta's Chat Completions JSON Schema examples are suitable; the coding harness is a separate concern from the app's requests. A package named openai does not mean requests go to OpenAI—configure baseURL and key explicitly. [S7, S8]
 
 Prompt:
 
@@ -542,9 +519,9 @@ If behind schedule, cut browser recording, translations and cover generation fir
 
 ## 17. First action to take
 
-Get one short recording and test transcription before building the polished interface. Then connect the Codex profiles, write the plan with Wonder, and implement each milestone with Spark.
+Get one short recording and test transcription before building the polished interface. Then write the plan with Wonder, and implement each milestone with Spark.
 
-The complete app should be understandable without Codex installed. Codex is your development tool; the web app calls Meta APIs directly through its server.
+The complete app should be understandable without Muse installed. Muse is your development tool; the web app calls Meta APIs directly through its server.
 
 
 ## 18. Submission requirements — aligned to the form Daniel supplied
@@ -564,7 +541,7 @@ Updated 27 October 2026 using the actual submission fields and participant annou
 | Public GitHub Repository | A real public repo containing the working source; not a placeholder or a private link |
 | 3-Minute Demo Video | An accessible recording of up to three minutes showing the actual app |
 | Project description | Problem, intended user, working flow and distinctive behavior |
-| Meta products | Separate runtime model calls from the models used through Codex to write code |
+| Meta products | Separate runtime model calls from the models used through Muse to write code |
 | Why Meta models matter | Explain the specific contribution of speech transcription and structured recipe extraction |
 | Meta feedback | Record actual successes, failures and improvements during development |
 | Partner feedback | Describe technologies actually used; if none, state that truthfully |
@@ -608,7 +585,7 @@ Action sequence:
 5. Do not assume a notification is an enforced hard spending cap; check billing behavior and keep app-level limits.
 6. Retain the US$20–30 initial development target; unused credit is preferable to unnecessary calls.
 
-The credit claim is a separate account action, not something Codex should do with a key embedded in a prompt. No credits have been claimed as part of preparing this guide.
+The credit claim is a separate account action, not something the coding assistant should do with a key embedded in a prompt. No credits have been claimed as part of preparing this guide.
 
 ### Submission schedule
 
@@ -656,11 +633,11 @@ Finalisation: replace "planned" with actual behavior only after verification. Ad
 
 The planned application uses Meta Model API for two core tasks. Muse Voice Transcribe converts a short family cooking recording into text. After a family member reviews that transcript, Muse Spark 1.3 is used to structure ingredients, cooking steps, a family-story summary and clarification questions. Recipe fields are designed to carry references to the supplied transcript so the family can inspect their source.
 
-For development, I plan to use Codex CLI as the coding harness with Meta's Muse models as the inference provider. Muse Spark 1.3 is assigned routine implementation and documentation; Muse Wonder is reserved for architecture, difficult integration problems and final review.
+For development, I use Muse as the coding harness with Meta's Muse models. Muse Spark 1.3 (medium) is assigned routine implementation and documentation; Muse Wonder 1.0 (high) is reserved for architecture, difficult integration problems and final review. (Development began on Codex CLI on 27 Oct 2026 and switched to Muse on 28 Oct 2026.)
 
 The cost plan is to transcribe each unique recording once, reuse successful results, and regenerate a recipe only after relevant input changes or an explicit request. The app keeps original recordings, AI drafts and family corrections distinct.
 
-Finalisation: list only models actually used. Runtime Wonder, Muse Image, SAM, translation and live voice interviewing are not part of the required scope. Codex is a development harness, not a Meta product or a dependency judges need to run.
+Finalisation: list only models actually used. Runtime Wonder, Muse Image, SAM, translation and live voice interviewing are not part of the required scope. Muse is a development harness, not a Meta product or a dependency judges need to run.
 
 ### Why are Meta's models important to your solution? — planning draft
 
@@ -707,7 +684,7 @@ Feedback log examples to investigate, not claims:
 - How often were measurements incorrectly supplied?
 - Were audio conversion and request errors easy to diagnose?
 - Were dashboard usage and credit balances clear?
-- Did the coding harness/provider setup work with the installed Codex version?
+- Did the coding harness/provider setup work smoothly (Codex era, then Muse)?
 
 ### Partner technologies feedback
 
@@ -742,7 +719,7 @@ Aim for 2:50–2:55 so exports and end screens do not exceed three minutes. Keep
 | 1:10–1:40 | Recipe draft with source references | Spark structures the recipe and flags an unspecified amount |
 | 1:40–2:05 | Answer one clarification | Add a genuine family-confirmed answer; preserve its provenance |
 | 2:05–2:30 | Saved card, voice playback, print view | Show the recipe and the person's original voice together |
-| 2:30–2:45 | Architecture/model-role slide or app evidence | Voice Transcribe + Spark at runtime; Wonder/Spark through Codex during development |
+| 2:30–2:45 | Architecture/model-role slide or app evidence | Voice Transcribe + Spark at runtime; Wonder/Spark through Muse during development |
 | 2:45–2:55 | Repo, limitations and closing card | Working scope and where judges can inspect/run it |
 
 Sample opening concept, not a personal factual claim:
@@ -759,7 +736,7 @@ Evidence to capture:
 
 Do not fill the video with a long architecture lecture. Let most of it show the product working.
 
-## 21. Final Codex task — submission package
+## 21. Final Muse task — submission package
 
 Run this after the live core flow and meaningful checks pass. Start with Wonder for review, then use Spark for routine edits.
 
@@ -779,6 +756,9 @@ Exit checklist:
 - [ ] Submission links pasted and checked before the deadline.
 
 ## Official references
+
+S1–S3 are legacy Codex-era references, superseded for this project by the
+Muse workflow in §5 (kept so earlier citations still resolve):
 
 S1. OpenAI, advanced Codex configuration and profile files:
 https://learn.chatgpt.com/docs/config-file/config-advanced
