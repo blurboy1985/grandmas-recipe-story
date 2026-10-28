@@ -37,9 +37,17 @@ jump straight to real recording instead of a sample-card form; pre-load
   smoke recipes deleted. Browser/visual + microphone behaviour
   unverified in-session (no Chromium on PATH).
 
+Warmth without the photo is carried by type and cards (Fraunces /
+Caveat / Special Elite, washi-tape tabs, stamp badges) — no large
+image. Committed (`7649384`), pushed, and deployed 28 Oct 2026:
+image `v6`, digest `4345521b…`, container instance
+`grandma-recipe-v6`, Worker version
+`fcfe2a74-e5ae-46e5-a7fb-09f9e7f434cb`. Verified live: home 200
+with record-first layout and no hero reference, old
+`/grandma-hero.webp` 404, API list 200.
+
 Next: Daniel records a real 1–5 min take on device (proves E + live
-Voice together), then submission package. Not committed/pushed/deployed
-yet — Daniel to say go.
+Voice together), then submission package.
 
 ---
 

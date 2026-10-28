@@ -15,7 +15,7 @@
       "scheduling_policy": "durable_object",
       "images": {
         "app": {
-          "image": "registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer@sha256:7206c97b7d35a6ec3c7498a14631830d5a98938e12c3a1872522019a237dd587"
+          "image": "registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer@sha256:4345521b5e09545fffd71378de712162b38fa1a892658d4a964aa87c523f34db"
         }
       }
     }
