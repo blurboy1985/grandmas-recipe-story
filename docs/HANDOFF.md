@@ -1,6 +1,99 @@
-# Handoff — final review done; submission package next
+# Handoff — deployed to Cloudflare, public (no login)
 
 Updated 28 October 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Browser-local saving + stateless AI (28 Oct 2026)
+
+Daniel asked: save locally on the user's browser machine, and use an
+API key with the cheapest Muse model (Spark 1.3) for extraction.
+
+- `src/lib/local-recipes.ts`: IndexedDB recipe box (`grandma-recipe-box`)
+  plus pure record logic mirroring `store.ts` (consent gates, approval
+  clearing on edit/re-transcription, review resets, blank-answer 400,
+  separate corrections, grounded-extraction validation). Deployed
+  build only: `NEXT_PUBLIC_LOCAL_MODE=1` (`npm run build:local`);
+  default/local-dev build keeps server SQLite mode untouched.
+- Pages branch on local mode: sample creation, WAV upload (same
+  byte-level validation), transcript edit/approve, answers,
+  corrections, review, delete and audio playback (Blob object URLs)
+  all run against IndexedDB. Copy states plainly: per device/browser,
+  no sync, clearing site data deletes cards.
+- Stateless AI routes (server stores nothing): `POST /api/ai/transcribe`
+  (validated WAV → Voice) and `POST /api/ai/extract` (approved
+  segments → Spark `muse-spark-1.3`, grounding-validated) in
+  `src/app/api/ai/`; `GET /api/sample-audio` serves the fictional
+  sample tone for local sample cards.
+- Worker: container starts with `enableInternet: true` and receives
+  `META_API_KEY` only from the Worker secret binding plus
+  `RECIPE_MODEL=muse-spark-1.3`; the key never reaches the browser.
+  Daniel set the secret with `wrangler secret put META_API_KEY` in his
+  own terminal (see `docs/DEPLOY.md`). Current deployment: Worker
+  `da7d1f19-3ea4-4a0e-85ea-b6255dfb018b`, image digest `c8f178e2…`
+  (tag `v3`), container instance name `grandma-recipe-v4` (bumped so
+  the new image and then the secret took over — running instances
+  keep their starting image and env until they restart).
+- Checks: typecheck pass, lint pass (44 files), `npm test` 53/53
+  (6 new `tests/local-recipes.test.ts`), `build:local` pass; the same
+  amd64 image was smoke-tested locally and live. A direct live Spark
+  extraction returned a grounded draft. Headless Chrome 156 (fresh
+  throwaway profile; Daniel's own Chrome untouched) ran 7/7 against
+  the live site: local-mode badge, sample create, IndexedDB holds the
+  recipe, card survives reload, live Spark Regenerate through the
+  real button (confirm dialog accepted), home list persists;
+  screenshot inspected. Site is public with no login, by Daniel's
+  decision. Still unverified: live Voice transcription (needs a
+  consented 1–5-minute WAV).
+- Committed and pushed to GitHub 28 Oct 2026 (this entry's commit).
+
+---
+
+## Cloudflare deployment (28 Oct 2026)
+
+Daniel asked: deploy to Cloudflare at `grandma-recipe.danielquek.com`.
+Initial choices (Container demo, Access gate, sample only) were
+superseded the same day by the browser-local section above: no login,
+browser saving, live Spark key. See `docs/DEPLOY.md` for the runbook.
+
+- Live: https://grandma-recipe.danielquek.com — Worker `grandma-recipe`
+  (version `cd4ab124-2c27-448f-93a5-431bed1b5840`), custom domain via
+  `wrangler.jsonc` route. App code unchanged; it runs in a Container
+  behind `cloudflare/worker.ts` (one named `GrandmaContainer` Durable
+  Object, `durable_object` scheduling policy — this account cannot use
+  `default` — image chosen in code, `standard-1`, port 8080,
+  10-minute inactivity timeout, `enableInternet: false`).
+- Image: `Dockerfile` assembles the host-built `.next` on
+  `node:24-trixie-slim`. Pushed to the Cloudflare registry in Docker
+  v2s2 format (preparation rejects Podman's OCI manifest) and pinned
+  by digest in `wrangler.jsonc`. Local Docker is a Podman shim that
+  drops buildx `--provenance`/`--sbom` flags; the Podman machine is
+  left running (`podman machine stop` to stop it).
+- Verified live: home page 200 with masthead, `GET /api/recipes`,
+  sample create → recipe page 200 → audio 200 → delete 200 → list
+  empty. Smoke data deleted. Container-local test of the same amd64
+  image passed before deploy.
+- Checks: `npm run typecheck` pass, `npm run lint` pass (39 files),
+  `npm test` 47/47 pass, `npm run build` pass.
+- Truthful limits at that stage: container disk is ephemeral. That
+  server-side saving was replaced by browser-local saving (above);
+  the container is now stateless scratch for the AI routes.
+
+### Access decision
+
+Daniel decided on 28 October 2026 that no login is needed. No Access
+application was created (Access is not enabled on the account in any
+case) and the live URL is intentionally public. Anyone can upload
+and delete sample recipes; sample data is ephemeral, so this is a
+demo-only exposure. Revisit if real family recordings are ever
+deployed here.
+
+Changed files: `Dockerfile`, `.dockerignore`, `cloudflare/worker.ts`,
+`cloudflare/worker-configuration.d.ts` (generated by `wrangler types`),
+`wrangler.jsonc`, `docs/DEPLOY.md`, `package.json`/`package-lock.json`
+(wrangler devDependency + `cf:*` scripts), `tsconfig.json` (exclude
+`cloudflare/`), `.gitignore` (`.wrangler/`, `.dev.vars*`), this handoff.
+Committed and pushed 28 Oct 2026 together with the browser-local work.
 
 ---
 

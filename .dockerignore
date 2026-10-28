@@ -1,0 +1,13 @@
+.git
+node_modules
+data
+docs
+tests
+scripts
+config
+cloudflare
+wrangler.jsonc
+.DS_Store
+*.md
+.env
+.env.*

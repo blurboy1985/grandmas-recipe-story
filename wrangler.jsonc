@@ -1,0 +1,46 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "grandma-recipe",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-28",
+  "routes": [
+    {
+      "pattern": "grandma-recipe.danielquek.com",
+      "custom_domain": true
+    }
+  ],
+  "containers": [
+    {
+      "class_name": "GrandmaContainer",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "app": {
+          "image": "registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer@sha256:c8f178e2fd7df5eddeb44f99db45a1571b138a6a9582d7dc9dcfe14a69d98150"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GRANDMA_CONTAINER",
+        "class_name": "GrandmaContainer"
+      }
+    ]
+  },
+  "exports": {
+    "GrandmaContainer": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "vars": {
+    "APP_MODE": "sample"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}

@@ -1,5 +1,13 @@
 "use client";
 import { use, useCallback, useEffect, useState } from "react";
+import {
+  answerLocal, applyExtractionLocal, applyTranscriptionLocal, approveTranscriptLocal,
+  correctLocal, editTranscriptLocal, extractionInputLocal, localDelete, localGet,
+  localSave, reviewLocal, toDetail,
+} from "@/lib/local-recipes";
+import type { RecipeDraft } from "@/server/validate";
+
+const LOCAL = process.env.NEXT_PUBLIC_LOCAL_MODE === "1";
 
 interface Detail {
   id: string; mode: string; processingState: string;
@@ -31,11 +39,31 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
   const [extractNote, setExtractNote] = useState("");
   const [transcribing, setTranscribing] = useState(false);
   const [transcribeNote, setTranscribeNote] = useState("");
+  const [audioObjectUrl, setAudioObjectUrl] = useState("");
 
   async function extract(regenerate: boolean) {
     if (regenerate && !confirm("Generate a new draft version? AI-generated fields may change; earlier versions, your answers, and your manual corrections are kept.")) return;
     setError(""); setExtractNote(""); setExtracting(true);
     try {
+      if (LOCAL) {
+        const rec = await localGet(id);
+        if (!rec) { setError("Could not load this recipe."); return; }
+        let input;
+        try { input = extractionInputLocal(rec); } catch (err) {
+          setError((err as { message?: string }).message ?? "extraction failed");
+          return;
+        }
+        const res = await fetch("/api/ai/extract", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        const data = await res.json() as { output?: RecipeDraft; model?: string; error?: string; code?: string };
+        if (!res.ok || !data.output) { setError(data.code ? `${data.error} (code: ${data.code})` : (data.error ?? "extraction failed")); return; }
+        applyExtractionLocal(rec, data.output, data.model ?? "muse-spark-1.3");
+        await localSave(rec);
+        setExtractNote("New draft generated from the approved transcript and saved in this browser.");
+        return;
+      }
       const res = await fetch(`/api/recipes/${id}/extract`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ regenerate }) });
       const data = await res.json() as { error?: string; code?: string; cached?: boolean };
       if (!res.ok) { setError(data.code ? `${data.error} (code: ${data.code})` : (data.error ?? "extraction failed")); return; }
@@ -46,6 +74,19 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
   async function transcribe() {
     setError(""); setTranscribeNote(""); setTranscribing(true);
     try {
+      if (LOCAL) {
+        const rec = await localGet(id);
+        if (!rec?.audioBlob) { setError("Recording is missing from this browser."); return; }
+        const form = new FormData();
+        form.append("audio", rec.audioBlob, "recording.wav");
+        const res = await fetch("/api/ai/transcribe", { method: "POST", body: form });
+        const data = await res.json() as { transcript?: string; error?: string; code?: string };
+        if (!res.ok || !data.transcript) { setError(data.code ? `${data.error} (code: ${data.code})` : (data.error ?? "transcription failed")); return; }
+        applyTranscriptionLocal(rec, data.transcript);
+        await localSave(rec);
+        setTranscribeNote("Transcript received and saved in this browser. Review it below, then approve a version before extraction.");
+        return;
+      }
       const res = await fetch(`/api/recipes/${id}/transcribe`, { method: "POST" });
       const data = await res.json() as { error?: string; code?: string; cached?: boolean };
       if (!res.ok) { setError(data.code ? `${data.error} (code: ${data.code})` : (data.error ?? "transcription failed")); return; }
@@ -54,6 +95,21 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
   }
 
   const refresh = useCallback(async () => {
+    if (LOCAL) {
+      const rec = await localGet(id);
+      if (!rec) { setError("Could not load this recipe."); return; }
+      const data = toDetail(rec) as unknown as Detail;
+      setDetail(data);
+      setEditText(data.editedTranscripts.at(-1)?.text ?? data.originalTranscript?.text ?? "");
+      const a: Record<string, string> = {};
+      for (const c of data.clarifications) a[c.id] = c.answer ?? "";
+      setAnswers(a);
+      setAudioObjectUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return rec.audioBlob ? URL.createObjectURL(rec.audioBlob) : "";
+      });
+      return;
+    }
     const res = await fetch(`/api/recipes/${id}`);
     if (!res.ok) { setError("Could not load this recipe."); return; }
     const data = await res.json() as Detail;
@@ -67,6 +123,23 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
   async function act(body: Record<string, unknown>) {
     setError("");
+    if (LOCAL) {
+      try {
+        const rec = await localGet(id);
+        if (!rec) { setError("Could not load this recipe."); return; }
+        if (body.action === "edit-transcript") editTranscriptLocal(rec, String(body.text ?? ""));
+        else if (body.action === "approve-transcript") approveTranscriptLocal(rec, String(body.versionId ?? ""));
+        else if (body.action === "answer") answerLocal(rec, String(body.clarificationId ?? ""), String(body.answer ?? ""));
+        else if (body.action === "correct") correctLocal(rec, String(body.targetField ?? ""), body.correctedValue ?? null);
+        else if (body.action === "review") reviewLocal(rec, String(body.reviewState ?? ""));
+        else { setError("unknown action"); return; }
+        await localSave(rec);
+      } catch (err) {
+        setError((err as { message?: string }).message ?? "action failed");
+      }
+      await refresh();
+      return;
+    }
     const res = await fetch(`/api/recipes/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json() as { error?: string };
     if (!res.ok) setError(data.error ?? "action failed");
@@ -75,7 +148,8 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
   async function remove() {
     if (!confirm("Delete this recipe, its transcripts and its audio?")) return;
-    await fetch(`/api/recipes/${id}`, { method: "DELETE" });
+    if (LOCAL) await localDelete(id);
+    else await fetch(`/api/recipes/${id}`, { method: "DELETE" });
     window.location.href = "/";
   }
 
@@ -89,6 +163,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       <h1 className="recipe-title">{detail.dishName || "(untitled)"}</h1>
       <p>
         <span className="badge">{detail.mode === "sample" ? "SAMPLE MODE — fictional data" : "UPLOADED RECORDING — live transcription"}</span>
+        {LOCAL ? <span className="badge">SAVED IN THIS BROWSER</span> : null}
       </p>
       <ol className="progress noprint">
         <li className={doneIdx >= 1 ? "done" : ""}>Upload</li>
@@ -100,7 +175,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       <section className="card">
         <h2>Recording</h2>
         <p className="muted">Cook: {detail.cookName || "—"}{detail.languageHint ? ` · languages: ${detail.languageHint}` : ""}</p>
-        <audio controls src={detail.audioUrl} className="noprint" />
+        <audio controls src={LOCAL ? audioObjectUrl : detail.audioUrl} className="noprint" />
         {detail.mode === "sample" ? <p className="muted">Sample tone stands in for a family recording. It is fictional and committed on purpose.</p> : null}
       </section>
 
@@ -111,7 +186,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
             <p className="muted">Transcript on file. Refreshing or reopening never calls the model again.</p>
           ) : (
             <>
-              <p className="muted">No transcript yet. Transcribing is one paid Voice call over the validated WAV; the original audio is kept unchanged.</p>
+              <p className="muted">No transcript yet. Transcribing is one paid Voice call over the validated WAV; the original audio is kept unchanged.{LOCAL ? " The audio is sent once for transcription and is not saved on the server; the transcript is saved in this browser." : ""}</p>
               <div className="row">
                 <button onClick={() => void transcribe()} disabled={transcribing}>{transcribing ? "Transcribing…" : "Transcribe with Voice"}</button>
               </div>

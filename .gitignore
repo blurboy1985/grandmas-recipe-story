@@ -23,3 +23,6 @@ logs/
 __pycache__/
 tsconfig.tsbuildinfo
 # Only intentionally public, fictional or specifically permitted media belongs in samples/.
+
+.wrangler/
+.dev.vars*

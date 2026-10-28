@@ -1,5 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { createSampleLocal, createUploadLocal, localList, localSave, toListItem } from "@/lib/local-recipes";
+import { validateUpload } from "@/server/audio";
+
+const LOCAL = process.env.NEXT_PUBLIC_LOCAL_MODE === "1";
 
 interface RecipeListItem { id: string; dishName: string; mode: string; processingState: string; reviewState: string | null; updatedAt: string; }
 
@@ -15,6 +19,10 @@ export default function Home() {
 
   const refresh = useCallback(async () => {
     try {
+      if (LOCAL) {
+        setRecipes((await localList()).map(toListItem));
+        return;
+      }
       const res = await fetch("/api/recipes");
       const data = await res.json() as { recipes: RecipeListItem[] };
       setRecipes(data.recipes ?? []);
@@ -26,6 +34,21 @@ export default function Home() {
     e.preventDefault();
     setError(""); setBusy(true);
     try {
+      if (LOCAL) {
+        let audioBlob: Blob | null = null;
+        try {
+          const r = await fetch("/api/sample-audio");
+          if (r.ok) audioBlob = await r.blob();
+        } catch { audioBlob = null; }
+        try {
+          const rec = createSampleLocal({ cookName, dishName, languageHint, consent }, audioBlob);
+          await localSave(rec);
+          window.location.href = `/recipes/${rec.id}`;
+        } catch (err) {
+          setError((err as { message?: string }).message ?? "could not create sample");
+        }
+        return;
+      }
       const res = await fetch("/api/recipes", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind: "sample", cookName, dishName, languageHint, consent }),
@@ -40,6 +63,29 @@ export default function Home() {
     e.preventDefault();
     setError(""); setUploadState("Uploading…");
     try {
+      if (LOCAL) {
+        const form = new FormData(e.currentTarget);
+        const file = form.get("audio");
+        if (!(file instanceof Blob)) { setError("audio file required"); setUploadState(""); return; }
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const checked = validateUpload(bytes);
+        if (!checked.ok) { setError(`invalid WAV: ${checked.error}`); setUploadState(""); return; }
+        try {
+          const rec = createUploadLocal({
+            cookName: cookName || String(form.get("uCook") ?? ""),
+            dishName: String(form.get("dishName") ?? ""),
+            languageHint: String(form.get("languageHint") ?? ""),
+            consent: form.get("consent") === "true" || form.get("consent") === "on",
+          }, file);
+          await localSave(rec);
+          setUploadState("Saved in this browser. Opening…");
+          window.location.href = `/recipes/${rec.id}`;
+        } catch (err) {
+          setError((err as { message?: string }).message ?? "upload failed");
+          setUploadState("");
+        }
+        return;
+      }
       const form = new FormData(e.currentTarget);
       form.set("cookName", cookName || (form.get("uCook") as string) || "");
       const res = await fetch("/api/uploads", { method: "POST", body: form });
@@ -53,8 +99,9 @@ export default function Home() {
   return (
     <main>
       <p className="intro">From her voice, to your kitchen table.</p>
-      <p><span className="badge">SAMPLE MODE</span></p>
+      <p><span className="badge">{LOCAL ? "SAVED IN THIS BROWSER" : "SAMPLE MODE"}</span></p>
       <p className="muted">This recipe box keeps what your relative actually said — vague spoonfuls and all — and asks about the rest instead of inventing it. The sample card below is fictional and runs without an API key. Saving is ordinary code, never an AI call.</p>
+      {LOCAL ? <p className="muted">Cards, transcripts and recordings are stored in this browser on this device only. They survive reloads and server restarts, but do not sync to other devices or browsers — clearing site data deletes them.</p> : null}
 
       <section className="card">
         <h2>1 · Start a sample card</h2>
@@ -83,7 +130,7 @@ export default function Home() {
 
       <section className="card">
         <h2>The recipe box</h2>
-        {recipes.length === 0 ? <p className="muted">No cards tucked in yet. Saved cards stay in the box when you reload or reopen the app.</p> : (
+        {recipes.length === 0 ? <p className="muted">{LOCAL ? "No cards tucked in yet. Saved cards stay in this browser when you reload or reopen the app." : "No cards tucked in yet. Saved cards stay in the box when you reload or reopen the app."}</p> : (
           <ul className="box-list">{recipes.map((r) => (
             <li key={r.id}><a href={`/recipes/${r.id}`}>{r.dishName || "(untitled)"}</a> <span className="muted">· {r.mode === "sample" ? "sample card" : "recording"} · {r.processingState}{r.reviewState ? ` · ${r.reviewState}` : ""}</span></li>
           ))}</ul>
