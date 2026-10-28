@@ -17,6 +17,10 @@ Daniel asked: revise UI/UX based on the shared mockup
   Pill buttons, dashed dropzone for WAV, pill consent box, Caveat card
   numbers, stamp badges, dark-mode palette from the mockup, print stays
   clean (hero/tape hidden).
+- Deployed: image `v5`, digest `7206c97b…`, container instance
+  `grandma-recipe-v5`, Worker version `34bd79a6-908d-4ac4-b62e-17e15ccdebc8`.
+  `Dockerfile` now also copies `public/`. Verified live: home 200 with
+  new headline, `/grandma-hero.webp` 200 (156,730 bytes), API list 200.
 - Home: hero headline + lede, grandma watercolour figure
   (`public/grandma-hero.webp`, 1200w/153KB, from the mockup assets)
   with animated steam, "Pause the steam" toggle, tilted

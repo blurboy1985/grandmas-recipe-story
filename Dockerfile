@@ -13,6 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY next.config.mjs ./
 COPY .next ./.next
+COPY public ./public
 COPY samples ./samples
 RUN mkdir -p /data/app
 EXPOSE 8080
