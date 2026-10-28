@@ -5,7 +5,7 @@
 // separate family evidence) so both modes behave the same. AI calls still
 // go to stateless server routes that hold the Meta key server-side.
 import { assignSegments, type Segment } from "../server/segments.ts";
-import { SAMPLE_RECIPE, SAMPLE_TRANSCRIPT_TEXT, SAMPLE_DISH_NAME } from "../server/sample-fixture.ts";
+import { SAMPLE_FIXTURES, sampleFixtureById } from "../server/sample-fixture.ts";
 import { validateRecipeDraft, type RecipeDraft } from "../server/validate.ts";
 
 export type LocalMode = "sample" | "live-manual";
@@ -43,30 +43,37 @@ function fail(status: number, code: string, message: string): never {
 function now(): string { return new Date().toISOString(); }
 function uid(): string { return crypto.randomUUID(); }
 
-export function createSampleLocal(input: { cookName: string; dishName?: string; languageHint?: string; consent: boolean }, audioBlob: Blob | null): LocalRecipe {
+export function createSampleLocal(input: { cookName: string; dishName?: string; languageHint?: string; consent: boolean; fixtureId?: string }, audioBlob: Blob | null): LocalRecipe {
   if (!input.consent) fail(400, "consent_required", "consent required");
   if (!input.cookName.trim()) fail(400, "cook_required", "cook name required");
+  const fixture = sampleFixtureById(input.fixtureId);
   const createdAt = now();
-  const dishName = input.dishName?.trim() || SAMPLE_DISH_NAME;
-  const segments = assignSegments(SAMPLE_TRANSCRIPT_TEXT);
-  const check = validateRecipeDraft(SAMPLE_RECIPE, segments);
+  const dishName = input.dishName?.trim() || fixture.dishName;
+  const segments = assignSegments(fixture.transcriptText);
+  const check = validateRecipeDraft(fixture.recipe, segments);
   if (!check.ok) throw new Error("sample fixture invalid: " + check.errors.join("; "));
-  const output: RecipeDraft = { ...SAMPLE_RECIPE, dish_name: dishName === SAMPLE_DISH_NAME ? SAMPLE_RECIPE.dish_name : dishName };
+  const output: RecipeDraft = { ...fixture.recipe, dish_name: dishName === fixture.dishName ? fixture.recipe.dish_name : dishName };
   const tvId = uid(); const rvId = uid();
   return {
     id: uid(), mode: "sample", processingState: "draft_ready",
     cookName: input.cookName.trim(), dishName, languageHint: input.languageHint?.trim() ?? "",
     createdAt, updatedAt: createdAt,
     audioBlob, audioType: "audio/wav",
-    originalTranscript: { id: tvId, text: SAMPLE_TRANSCRIPT_TEXT, segments, approvedAt: createdAt, createdAt },
+    originalTranscript: { id: tvId, text: fixture.transcriptText, segments, approvedAt: createdAt, createdAt },
     editedTranscripts: [], approvedVersionId: tvId,
     drafts: [{ id: rvId, output, reviewState: "draft", createdAt, model: "sample-fixture" }],
-    clarifications: SAMPLE_RECIPE.clarifications.map((c) => ({
+    clarifications: fixture.recipe.clarifications.map((c) => ({
       id: uid(), question: c.question, relatedField: c.related_field,
       sourceSegmentIds: c.source_segment_ids, answer: null, provenance: "model", answeredAt: null,
     })),
     corrections: [],
   };
+}
+
+// Fictional samples to pre-load once; returns only fixtures not already present.
+export function missingSampleFixtures(existing: LocalRecipe[]): typeof SAMPLE_FIXTURES {
+  const names = new Set(existing.filter((r) => r.mode === "sample").map((r) => r.dishName));
+  return SAMPLE_FIXTURES.filter((f) => !names.has(f.dishName));
 }
 
 export function createUploadLocal(input: { cookName: string; dishName: string; languageHint?: string; consent: boolean }, audioBlob: Blob): LocalRecipe {

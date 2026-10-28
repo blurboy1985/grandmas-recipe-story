@@ -4,6 +4,45 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Milestone E + record-first home redesign (28 Oct 2026)
+
+Daniel asked: add Milestone E (browser recording); remove the grandma
+photo; make record + recipe box visible in one shot without scrolling;
+jump straight to real recording instead of a sample-card form; pre-load
+2–3 sample cards in the recipe box.
+
+- Browser recording (`src/lib/recorder.ts` + home recorder): MIME
+  detection, 1–5 min timer with auto-stop, preview playback, Web Audio
+  conversion to mono 16 kHz PCM WAV, then the existing validated
+  upload path (local IndexedDB or `/api/uploads`). No FFmpeg/server
+  conversion. WAV upload kept as a collapsed fallback. Not yet proven
+  on a real device (Safari/iPhone + Chrome) — Daniel to record once.
+- Home redesigned: hero photo removed (`public/grandma-hero.webp`
+  deleted, no references left); compact header; two-column grid —
+  "Record her recipe" (shared name/dish/language/consent for record +
+  upload) left, "The recipe box" right with internal scroll on
+  desktop, stacked on mobile. No sample-creation form; recording is
+  the primary action.
+- Three fictional samples pre-loaded once (idempotent, guarded by
+  `grs-seeded-v1` in local mode; `seedSampleRecipes` dish-name check
+  in server mode): Tomato Egg, Steamed Egg with Minced Pork, Ginger
+  Chicken with Spring Onion — `SAMPLE_FIXTURES` in
+  `src/server/sample-fixture.ts`, each grounded/validated. Seeding
+  runs once per browser (local-storage flag); a deleted sample is
+  not re-created for that browser.
+- Checks: typecheck pass, lint pass (47 files), `npm test` 60/60
+  (7 new: `tests/recorder.test.ts`, `tests/sample-fixtures.test.ts`),
+  `build:local` pass. HTTP smoke on `next start` :3109 — home serves
+  record + box headings with no hero image, seed created 3 then 0,
+  smoke recipes deleted. Browser/visual + microphone behaviour
+  unverified in-session (no Chromium on PATH).
+
+Next: Daniel records a real 1–5 min take on device (proves E + live
+Voice together), then submission package. Not committed/pushed/deployed
+yet — Daniel to say go.
+
+---
+
 ## UI/UX revision from mockup artifact (28 Oct 2026)
 
 Daniel asked: revise UI/UX based on the shared mockup

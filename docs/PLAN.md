@@ -21,7 +21,7 @@ and story draft → clarification/correction → saved card with original audio.
 | B: grounded extraction | Spark medium | Code-complete, live-verified once | Real text request, validated sources/schema, semantic cases, cache/dedup checks |
 | C: transcription | Spark medium | Code-complete, not live-proven | Validated real WAV flow and failure handling, three recording evaluations |
 | D: clarify/save/print | Spark medium | Code-complete | Versioned family answers/corrections, visible unknowns, reopen/delete/playback/print |
-| E: browser recording | Spark; Wonder if stuck | Optional, not started | Only after A–D pass; conversion and Safari/iPhone + Chrome checks |
+| E: browser recording | Spark; Wonder if stuck | Code-complete 28 Oct 2026 (browser conversion, no FFmpeg) | MediaRecorder + in-browser WAV conversion; real-device Safari/iPhone + Chrome checks remain Daniel's |
 | Final review | Wonder then Spark fixes | Complete 28 Oct 2026 | `docs/REVIEW.md`: two Medium + three Low findings fixed with regression tests; live-flow/family/fresh-clone gates remain Daniel-owned |
 | Submission package | Wonder review, Spark edits | Drafts prepared | Public repo, accessible ≤3-minute video, truthful implemented-feature claims |
 
@@ -95,14 +95,18 @@ cache and temporary files), original audio playback and browser Print/Save as PD
 Review status is not a proof of factual accuracy. Planned commit:
 `feat: preserve family corrections and printable recipe cards`.
 
-## Optional milestone E
+## Milestone E: browser recording (code-complete 28 Oct 2026)
 
-Only after A–D pass: microphone MIME detection, five-minute timer and preview;
-safe FFmpeg conversion through argument arrays with UUID temp paths, timeout,
-limits and cleanup, preserving the original. Test Safari on iPhone and Chrome;
-keep upload fallback. Secure context is required. Translation and decorative
-cover generation are optional, explicit, cached requests with truthful labels.
-Cut optional scope first if the schedule slips.
+Implemented in the browser instead of FFmpeg on the server: `MediaRecorder`
+MIME detection (`pickMimeType`), 5-minute timer with auto-stop and preview
+playback, then Web Audio decode + resample to mono 16 kHz 16-bit PCM WAV
+(`src/lib/recorder.ts`) which passes through the existing byte-level WAV
+validation (1–5 min, ≤20 MB). The original browser take stays playable in
+the preview until saved or discarded; upload-WAV remains the fallback.
+Secure context (HTTPS/localhost) + microphone permission are required and
+the UI says so when unavailable. Still outstanding (Daniel): record on
+Safari/iPhone and Chrome on a real device. Translation and decorative
+cover generation remain optional future work, not implemented.
 
 ## Review and release gates
 

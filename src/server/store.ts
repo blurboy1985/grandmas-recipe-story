@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync, existsSync, unlinkSync, readFileSync, copyFil
 import { join } from "node:path";
 import { getDb, uuid, nowIso, dataDir } from "./db.ts";
 import { assignSegments } from "./segments.ts";
-import { SAMPLE_RECIPE, SAMPLE_TRANSCRIPT_TEXT, SAMPLE_DISH_NAME } from "./sample-fixture.ts";
+import { SAMPLE_FIXTURES, sampleFixtureById } from "./sample-fixture.ts";
 import { validateRecipeDraft } from "./validate.ts";
 
 export type ProcessingState = "uploaded" | "transcribing" | "transcript_ready" | "extracting" | "draft_ready" | "failed";
@@ -24,17 +24,18 @@ export function sampleAudioPath(): string {
   return join(process.cwd(), "samples", "sample.wav");
 }
 
-export interface CreateSampleInput { cookName: string; dishName?: string; languageHint?: string; consent: boolean; }
+export interface CreateSampleInput { cookName: string; dishName?: string; languageHint?: string; consent: boolean; fixtureId?: string; }
 export interface CreateUploadInput { uploadId: string; cookName: string; dishName: string; languageHint?: string; consent: boolean; }
 
 export function createSampleRecipe(input: CreateSampleInput): { id: string } {
   if (!input.consent) throw Object.assign(new Error("consent required"), { status: 400, code: "consent_required" });
   if (!input.cookName.trim()) throw Object.assign(new Error("cook name required"), { status: 400, code: "cook_required" });
+  const fixture = sampleFixtureById(input.fixtureId);
   const db = getDb();
   const createdAt = nowIso();
   const recordingId = uuid();
   const jobId = uuid();
-  const dishName = input.dishName?.trim() || SAMPLE_DISH_NAME;
+  const dishName = input.dishName?.trim() || fixture.dishName;
   const wavSrc = sampleAudioPath();
   const bytes = existsSync(wavSrc) ? readFileSync(wavSrc) : Buffer.from("RIFF----WAVE", "utf8");
   const hash = sha256(bytes);
@@ -42,8 +43,8 @@ export function createSampleRecipe(input: CreateSampleInput): { id: string } {
   mkdirSync(recDir(), { recursive: true });
   if (existsSync(wavSrc)) copyFileSync(wavSrc, join(dataDir(), relPath));
   else writeFileSync(join(dataDir(), relPath), bytes);
-  const segments = assignSegments(SAMPLE_TRANSCRIPT_TEXT);
-  const check = validateRecipeDraft(SAMPLE_RECIPE, segments);
+  const segments = assignSegments(fixture.transcriptText);
+  const check = validateRecipeDraft(fixture.recipe, segments);
   if (!check.ok) throw new Error("sample fixture invalid: " + check.errors.join("; "));
   const tvId = uuid();
   const rvId = uuid();
@@ -54,17 +55,35 @@ export function createSampleRecipe(input: CreateSampleInput): { id: string } {
     db.prepare("INSERT INTO jobs (id, recording_id, mode, processing_state, approved_transcript_version_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)")
       .run(jobId, recordingId, "sample", "draft_ready", tvId, createdAt, createdAt);
     db.prepare("INSERT INTO transcript_versions (id, recording_id, kind, text, segments_json, created_at, approved_at) VALUES (?,?,?,?,?,?,?)")
-      .run(tvId, recordingId, "original", SAMPLE_TRANSCRIPT_TEXT, JSON.stringify(segments), createdAt, createdAt);
-    const output = { ...SAMPLE_RECIPE, dish_name: dishName === SAMPLE_DISH_NAME ? SAMPLE_RECIPE.dish_name : dishName };
+      .run(tvId, recordingId, "original", fixture.transcriptText, JSON.stringify(segments), createdAt, createdAt);
+    const output = { ...fixture.recipe, dish_name: dishName === fixture.dishName ? fixture.recipe.dish_name : dishName };
     db.prepare("INSERT INTO recipe_versions (id, job_id, transcript_version_id, input_hash, model, prompt_version, schema_version, output_json, review_state, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)")
       .run(rvId, jobId, tvId, "sample-v1", "sample-fixture", "sample-prompt-v1", "sample-schema-v1", JSON.stringify(output), "draft", createdAt);
-    for (const c of SAMPLE_RECIPE.clarifications) {
+    for (const c of fixture.recipe.clarifications) {
       db.prepare("INSERT INTO clarifications (id, recipe_version_id, question, related_field, source_segment_ids_json, provenance) VALUES (?,?,?,?,?,?)")
         .run(uuid(), rvId, c.question, c.related_field, JSON.stringify(c.source_segment_ids), "model");
     }
     db.exec("COMMIT");
   } catch (e) { try { db.exec("ROLLBACK"); } catch {} throw e; }
   return { id: jobId };
+}
+
+// Pre-load the fictional samples once (idempotent by dish name). No family
+// data is involved, so no family consent is claimed for these cards.
+export function seedSampleRecipes(): { ids: string[]; created: number } {
+  const db = getDb();
+  const existing = new Set(
+    (db.prepare("SELECT r.dish_name FROM jobs j JOIN recordings r ON r.id=j.recording_id WHERE j.mode='sample'").all() as { dish_name: string }[])
+      .map((r) => r.dish_name),
+  );
+  const ids: string[] = [];
+  let created = 0;
+  for (const f of SAMPLE_FIXTURES) {
+    if (existing.has(f.dishName)) continue;
+    ids.push(createSampleRecipe({ cookName: "Sample Cook (fictional)", dishName: f.dishName, consent: true, fixtureId: f.id }).id);
+    created++;
+  }
+  return { ids, created };
 }
 
 export function stageUpload(bytes: Uint8Array, originalName: string): { uploadId: string; byteSize: number } {
