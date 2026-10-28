@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createSampleLocal, createUploadLocal, localList, localSave, missingSampleFixtures, toListItem } from "@/lib/local-recipes";
 import { formatTimer, pickMimeType, recordedBlobToWav, recorderSupported, RECORD_MAX_MS, RECORD_MIN_MS } from "@/lib/recorder";
+import { resolveSaveDetails } from "@/lib/save-details";
 import { validateUpload } from "@/server/audio";
 
 const LOCAL = process.env.NEXT_PUBLIC_LOCAL_MODE === "1";
@@ -15,7 +16,6 @@ export default function Home() {
   const [cookName, setCookName] = useState("");
   const [dishName, setDishName] = useState("");
   const [languageHint, setLanguageHint] = useState("");
-  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploadState, setUploadState] = useState("");
@@ -72,27 +72,22 @@ export default function Home() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  function checkDetails(): boolean {
-    if (!cookName.trim()) { setError("Add her name first."); return false; }
-    if (!dishName.trim()) { setError("Add the dish she is talking through."); return false; }
-    if (!consent) { setError("Tick the consent box first."); return false; }
-    return true;
-  }
-
   async function saveWav(wav: Blob, sourceLabel: string) {
     const bytes = new Uint8Array(await wav.arrayBuffer());
     const checked = validateUpload(bytes);
     if (!checked.ok) { setError(`Recording not saved: ${checked.error === "too_short" ? "record at least 1 minute" : checked.error}. ${sourceLabel}`); return; }
+    // No form gate: details are optional, saving is the deliberate action.
+    const details = resolveSaveDetails({ cookName, dishName, languageHint });
     if (LOCAL) {
-      const rec = createUploadLocal({ cookName, dishName, languageHint, consent }, wav);
+      const rec = createUploadLocal({ ...details, consent: true }, wav);
       await localSave(rec);
       window.location.href = `/recipes/${rec.id}`;
       return;
     }
     const form = new FormData();
     form.append("audio", new File([wav], "recording.wav", { type: "audio/wav" }));
-    form.set("cookName", cookName); form.set("dishName", dishName);
-    form.set("languageHint", languageHint); form.set("consent", consent ? "true" : "false");
+    form.set("cookName", details.cookName); form.set("dishName", details.dishName);
+    form.set("languageHint", details.languageHint); form.set("consent", "true");
     const res = await fetch("/api/uploads", { method: "POST", body: form });
     const data = await res.json() as { id?: string; error?: string };
     if (!res.ok || !data.id) { setError(data.error ?? "upload failed"); return; }
@@ -101,7 +96,6 @@ export default function Home() {
 
   async function startRecording() {
     setError(""); setRecNote("");
-    if (!checkDetails()) return;
     if (!recorderSupported()) { setError("Browser recording needs a secure page (HTTPS or localhost) and microphone permission. Use “Upload a WAV instead” below."); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -141,7 +135,7 @@ export default function Home() {
   }
 
   async function saveRecording() {
-    if (!recordedRef.current || !checkDetails()) return;
+    if (!recordedRef.current) return;
     setPhase("saving"); setError("");
     try {
       const { wav } = await recordedBlobToWav(recordedRef.current);
@@ -156,7 +150,6 @@ export default function Home() {
     const form = new FormData(e.currentTarget);
     const file = form.get("audio");
     if (!(file instanceof Blob)) { setError("audio file required"); setUploadState(""); return; }
-    if (!checkDetails()) { setUploadState(""); return; }
     try {
       const wav = file.type === "audio/wav" || file.name.endsWith(".wav") ? file : file;
       await saveWav(wav, "");
@@ -189,24 +182,37 @@ export default function Home() {
 
   return (
     <main className="home">
-      <header className="home-head">
-        <div>
-          <h1>From her voice, to your kitchen table</h1>
-          <p className="lede">Record her talking through a dish — or add a WAV you already have — and it becomes a card in the box beside it. No scrolling hunt: record on the left, your cards on the right.</p>
+      {/* ——— Landing: one light section ——— */}
+      <section className="landing" aria-labelledby="landingTitle">
+        <div className="landing-copy">
+          <h1 id="landingTitle">Recipes fade.<br />Her voice shouldn&rsquo;t.</h1>
+          <p className="landing-sub">Record Grandma telling one dish. Keep her voice with the recipe — exactly as she said it.</p>
+          <div className="landing-ctas noprint">
+            <a className="btn-primary" href="#preserve">Record her recipe</a>
+            <a className="btn-ghost" href="#recipe-box">See sample cards ↓</a>
+          </div>
+          <p className="landing-note">Nothing invented · Her voice, always kept <span className="landing-mode">{LOCAL ? "· Saved in this browser" : "· Sample mode"}</span></p>
         </div>
-        <p className="stamp">{LOCAL ? "Saved in this browser" : "Sample mode"}</p>
-      </header>
+        <div className="landing-visual">
+          <figure className="photo-old">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/grandma-old-photo.jpg" alt="Fictional vintage-style photo of a grandma steaming fish in a home kitchen" />
+            <figcaption>Ah Ma&rsquo;s festive fish</figcaption>
+          </figure>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="grandma-char" src="/grandma-character.jpg" alt="Illustrated grandma waving, holding a ladle beside a steaming bowl" />
+          <span className="steam landing-steam" aria-hidden="true"><span /><span /><span /></span>
+          <span className="speech hand" aria-hidden="true">“a bit — enough for the colour”</span>
+          <p className="landing-credit">Illustrations shown — your family photos stay private.</p>
+        </div>
+      </section>
       {LOCAL ? <p className="muted home-note">Cards, transcripts and recordings live in this browser on this device only — no sync, and clearing site data deletes them. Saving is ordinary code, never an AI call.</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
-      <div className="home-grid">
+      <div className="home-grid" id="preserve">
         <section className="card record-card" aria-labelledby="recordTitle">
           <h2 id="recordTitle"><span className="num">1</span> Record her recipe</h2>
-          <p className="card-intro">Tell us who is cooking, then press record. <span className="hand">One dish, 1–5 minutes,</span> just the way she tells it.</p>
-          <label>Her name<input type="text" value={cookName} onChange={(e) => setCookName(e.target.value)} placeholder="e.g. Ah Ma, Popo, Nai Nai" /></label>
-          <label>The dish she is talking through<input type="text" value={dishName} onChange={(e) => setDishName(e.target.value)} placeholder="e.g. Steamed pomfret, the festive way" /></label>
-          <label>Language she tells it in<input type="text" value={languageHint} onChange={(e) => setLanguageHint(e.target.value)} placeholder="e.g. Hokkien, with a little Teochew" /></label>
-          <label className="consent"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>I have her okay to record and keep this family story here.</span></label>
+          <p className="card-intro">Press record first — just press it and let her talk. <span className="hand">One dish, 1–5 minutes.</span> Name it later, only if you want.</p>
 
           <div className="recorder noprint">
             {phase === "recording" ? (
@@ -233,9 +239,17 @@ export default function Home() {
             )}
           </div>
 
+          <div className="save-details">
+            <h3>Name this card <span className="hand">— optional</span></h3>
+            <label>Her name<input type="text" value={cookName} onChange={(e) => setCookName(e.target.value)} placeholder="e.g. Ah Ma, Popo, Nai Nai" /></label>
+            <label>The dish<input type="text" value={dishName} onChange={(e) => setDishName(e.target.value)} placeholder="e.g. Steamed pomfret, the festive way" /></label>
+            <label>Language she tells it in<input type="text" value={languageHint} onChange={(e) => setLanguageHint(e.target.value)} placeholder="e.g. Hokkien, with a little Teochew" /></label>
+            <p className="muted">Leave blank and it saves as “Grandma · Untitled dish”.</p>
+          </div>
+
           <details className="upload-fallback">
             <summary>Already have a recording? Upload a WAV instead</summary>
-            <p className="muted">Mono PCM 16-bit WAV, 1–5 minutes, at most 20 MB. Uses the name, dish and consent above.</p>
+            <p className="muted">Mono PCM 16-bit WAV, 1–5 minutes, at most 20 MB. The optional name above is used if you filled it in.</p>
             <form onSubmit={uploadWav}>
               <label className="dropzone"><span className="dz-title">Choose a .wav file</span><span className="dz-sub">or drag it onto this box</span><input type="file" name="audio" accept=".wav,audio/wav" required onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")} /></label>
               {fileName ? <div className="file-meta"><span>{fileName}</span></div> : null}
@@ -244,7 +258,7 @@ export default function Home() {
           </details>
         </section>
 
-        <section className="card sage box-card" aria-labelledby="boxTitle">
+        <section className="card sage box-card" id="recipe-box" aria-labelledby="boxTitle">
           <div className="box-head"><h2 id="boxTitle">The recipe box</h2><span className="box-count">{recipes.length === 0 ? "Empty" : `${recipes.length} card${recipes.length === 1 ? "" : "s"}`}</span></div>
           <p className="card-intro">Your recordings land here. The three sample cards are fictional, pre-loaded so you can see a finished card — open one, or delete it from its card page.</p>
           <div className="box-scroll">

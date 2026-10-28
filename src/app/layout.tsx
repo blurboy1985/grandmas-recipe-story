@@ -9,8 +9,8 @@ const type = Special_Elite({ subsets: ["latin"], variable: "--font-type", weight
 export const viewport = { width: "device-width", initialScale: 1 };
 
 export const metadata = {
-  title: "Grandma's Recipe Story",
-  description: "Preserve a family cooking recording as an editable recipe card and story, with the original voice kept alongside.",
+  title: "Grandma's Recipe Story — Recipes fade. Her voice shouldn't.",
+  description: "Preserve traditional recipes from grandma: record her telling a dish and keep her original voice beside a recipe card that never invents what she didn't say.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <footer className="site-foot noprint">
             <span className="hand">— with love, from her kitchen —</span>
-            From her voice, to your kitchen table.
+            Recipes fade. Her voice shouldn&rsquo;t. <span aria-hidden="true">·</span> From her voice, to your kitchen table.
           </footer>
         </div>
       </body>

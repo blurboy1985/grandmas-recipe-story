@@ -3,10 +3,10 @@
    Fraunces/Lora/Caveat/Special Elite via next/font with system fallbacks. */
 :root {
   color-scheme: light;
-  --bg: #fdf3dc;
-  --bg-deep: #f7e8c8;
-  --paper: #fffaf0;
-  --paper-soft: #fff6e3;
+  --bg: #fffdf8;
+  --bg-deep: #fef3d8;
+  --paper: #ffffff;
+  --paper-soft: #fffaf0;
   --field-bg: #fffdf7;
   --ink: #3b2a20;
   --ink-soft: #6d5744;
@@ -73,6 +73,8 @@ a:hover { color: var(--rust); }
 .home-grid .card { margin: .8rem 0; }
 .record-card label { margin-top: .55rem; }
 .recorder { border: 1.5px dashed var(--card-edge); border-radius: 14px; background: var(--paper-soft); padding: 1rem 1.1rem; margin-top: 1rem; }
+.save-details { margin-top: 1.2rem; padding-top: .4rem; border-top: 1px solid var(--line); }
+.save-details h3 { text-transform: none; letter-spacing: 0; font-size: 1.05rem; }
 .rec-status { font-family: var(--display); font-weight: 600; margin: 0 0 .7rem; }
 .rec-dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; background: var(--error); margin-right: .45rem; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .35; } }
@@ -86,6 +88,31 @@ a:hover { color: var(--rust); }
   .home-grid { grid-template-columns: 1fr; }
   .box-scroll { max-height: none; overflow: visible; }
   .home-head { flex-direction: column; }
+}
+
+/* ——— Landing: one light section ——— */
+.landing { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 2.5rem; align-items: center; padding: 2rem 0 1rem; }
+.landing h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.7rem, 6vw, 4.4rem); line-height: .98; letter-spacing: -.02em; margin: 0 0 1rem; }
+.landing-sub { font-size: 1.15rem; line-height: 1.6; color: var(--ink-soft); margin: 0 0 1.4rem; max-width: 26em; }
+.landing-ctas { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; }
+.btn-primary { font-family: var(--display); font-weight: 700; color: #fff7e8; background: var(--rust); border: 1px solid var(--rust-deep); border-radius: 999px; padding: .85rem 1.7rem; text-decoration: none; box-shadow: 0 6px 18px -6px rgba(138,58,30,.45); }
+.btn-primary:hover { background: var(--rust-deep); color: #fff7e8; }
+.btn-ghost { font-family: var(--display); font-weight: 600; color: var(--rust-deep); text-decoration: underline; text-underline-offset: 4px; padding: .85rem .4rem; }
+.landing-note { font-size: .88rem; color: var(--muted); margin: 1.1rem 0 0; }
+.landing-mode { color: var(--rust); }
+.landing-visual { position: relative; min-height: 340px; }
+.photo-old { position: absolute; left: 0; top: 6px; width: 62%; margin: 0; background: #fff; padding: 10px 10px 8px; box-shadow: var(--shadow-lift); transform: rotate(-3deg); border: 1px solid var(--line); }
+.photo-old img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.photo-old figcaption { font-family: var(--hand); font-size: 1.25rem; color: var(--ink-soft); padding: 6px 4px 2px; }
+.grandma-char { position: absolute; right: 0; bottom: 28px; width: 52%; aspect-ratio: 1; object-fit: cover; object-position: top; border-radius: 50% 50% 18px 18px; border: 4px solid #fff; box-shadow: var(--shadow-lift); animation: bob 3.6s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(1deg); } 50% { transform: translateY(-8px) rotate(-.5deg); } }
+.landing-steam { right: 34%; bottom: 38%; width: 60px; height: 90px; }
+.speech { position: absolute; right: 2%; top: 0; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: .45rem .9rem; font-size: 1.3rem; color: var(--rust-deep); box-shadow: var(--shadow); transform: rotate(2deg); animation: bob 4.4s ease-in-out infinite; }
+.landing-credit { position: absolute; left: 4px; bottom: -6px; font-size: .75rem; font-style: italic; color: var(--muted); margin: 0; }
+#recipe-box, #preserve { scroll-margin-top: 1rem; }
+@media (max-width: 820px) {
+  .landing { grid-template-columns: 1fr; gap: 1.2rem; padding-top: 1rem; }
+  .landing-visual { min-height: 320px; max-width: 480px; }
 }
 
 /* Hero (recipe pages keep print hiding for .hero) */
@@ -240,7 +267,7 @@ ol.steps li::marker { font-family: var(--hand); color: var(--rust); font-size: 1
 @media print {
   body { background: #fff; }
   body::before { display: none; }
-  .noprint, .masthead, .site-foot, .hero, .motion-btn, .steam { display: none !important; }
+  .noprint, .masthead, .site-foot, .hero, .motion-btn, .steam, .landing { display: none !important; }
   .shell { max-width: none; padding: 0; }
   .card { background: #fff; border: none; box-shadow: none; padding: 0; margin: 0 0 1rem; }
   .card::before { display: none; }

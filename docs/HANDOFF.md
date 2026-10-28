@@ -4,6 +4,61 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Landing page: one light section (28 Oct 2026, revised same day)
+
+Daniel asked: lighter theme, far fewer words, old photos + animated
+characters, just 1 landing section. This supersedes the wordy
+multi-section landing built earlier the same day (removed).
+
+- Single section only (`src/app/page.tsx`): tagline **“Recipes fade.
+  Her voice shouldn’t.”**, one-line sub (“Record Grandma telling one
+  dish. Keep her voice with the recipe — exactly as she said it.”),
+  two CTAs (`#preserve`, `#recipe-box`), one small note line. The
+  generations / why-it-matters / keeping-principles sections and the
+  heirloom-card preview are gone. Recorder + recipe box unchanged
+  below; no behaviour, consent, seeding or storage changes.
+- Images (AI-generated, fictional, in `public/`): `grandma-old-photo.jpg`
+  (202K, vintage kitchen photo as a tilted polaroid, “Ah Ma’s festive
+  fish”) and `grandma-character.jpg` (81K, illustrated grandma with
+  ladle + steaming bowl). Character gently bobs, steam rises, speech
+  bubble shows her words; `prefers-reduced-motion` disables it.
+  Caption states illustrations are shown and family photos stay
+  private. `src/app/layout.tsx` title/footer carry the tagline.
+- Lighter theme (`src/app/globals.css`): `--bg #fffdf8`, `--paper`
+  white; landing CSS is one compact block, landing hidden in print.
+- Checks: typecheck pass, lint pass (47 files), `npm test` 60/60,
+  `build:local` pass; probe on `next start` :3112 — home 200 with
+  tagline/recorder/box, both images 200 `image/jpeg`, removed
+  sections absent. Visual/browser check not run in-session.
+
+---
+
+## Record-first: no form gate (28 Oct 2026)
+
+Daniel asked: record in the browser first without filling name /
+dish / language, and no “her okay” checkbox. Then commit, push,
+deploy.
+
+- Recorder now sits first in the record card; pressing Record needs
+  nothing filled in. Name / dish / language moved below as optional
+  “Name this card” fields; the consent checkbox is removed from the
+  UI. Saving uses `resolveSaveDetails` (`src/lib/save-details.ts`):
+  blanks fall back to “Grandma” / “Untitled dish”; filled values are
+  trimmed and kept. New `tests/save-details.test.ts` (2 tests,
+  observed failing before the helper existed). WAV upload follows
+  the same no-gate path.
+- Note: the data layer still records `consent_at` at save time —
+  saving is now the deliberate action, with no separate checkbox
+  attesting her permission. Daniel accepted this trade-off
+  explicitly; revisit before any real family deployment.
+- Checks: typecheck pass, lint pass (49 files), `npm test` 62/62,
+  `build` + `build:local` pass; probe on `next start` :3113 — record
+  button present before optional details, consent text absent.
+  Commit / push / deploy follow in this session (see git log and the
+  live check recorded below).
+
+---
+
 ## Three-minute demo video rendered (28 Oct 2026, Claude Code session)
 
 Daniel asked for an animated demo (problem, hook, solution) with
