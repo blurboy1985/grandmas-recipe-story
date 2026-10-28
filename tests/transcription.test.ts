@@ -153,6 +153,20 @@ describe("transcription", () => {
     );
   });
 
+  it("clears approval when transcription replaces the approved original", async () => {
+    const { store, jobId } = await makeLiveJob();
+    // Approve the still-empty original placeholder (possible via the API),
+    // then transcribe: the new words must not inherit that approval.
+    const originalId = store.getRecipeDetail(jobId)!.originalTranscript!.id;
+    store.approveTranscript(jobId, originalId);
+    assert.equal(store.getRecipeDetail(jobId)!.approvedVersionId, originalId);
+    const fetchImpl = (async () => okResponse("Fresh words from grandma.")) as typeof fetch;
+    await store.requestTranscription(jobId, { fetchImpl });
+    const d = store.getRecipeDetail(jobId)!;
+    assert.equal(d.originalTranscript?.text, "Fresh words from grandma.");
+    assert.equal(d.approvedVersionId, null);
+  });
+
   it("cache keys are stable per recording hash and model", () => {
     const k1 = transcriptionCacheKey("sha-aaa", "muse-voice-transcribe-1.0");
     const k2 = transcriptionCacheKey("sha-aaa", "muse-voice-transcribe-1.0");

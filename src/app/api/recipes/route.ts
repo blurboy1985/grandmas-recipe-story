@@ -4,7 +4,7 @@ import { createSampleRecipe, listRecipes } from "@/server/store";
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json({ recipes: listRecipes(), sampleMode: true });
+  return NextResponse.json({ recipes: listRecipes() });
 }
 
 export async function POST(req: Request) {

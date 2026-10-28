@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 let db: DatabaseSync | null = null;
 let dbPath = "";
@@ -14,7 +14,6 @@ export function getDb(): DatabaseSync {
   const path = join(dir, "app.sqlite");
   if (db && dbPath === path) return db;
   mkdirSync(dir, { recursive: true });
-  const fresh = !existsSync(path);
   const handle = new DatabaseSync(path);
   handle.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   handle.exec(`
@@ -70,7 +69,7 @@ export function getDb(): DatabaseSync {
     if (!names.has("dish_name")) handle.exec("ALTER TABLE recordings ADD COLUMN dish_name TEXT NOT NULL DEFAULT ''");
     if (!names.has("language_hint")) handle.exec("ALTER TABLE recordings ADD COLUMN language_hint TEXT NOT NULL DEFAULT ''");
   } catch { /* fresh schema already has columns */ }
-  if (fresh || true) recoverInterrupted(handle);
+  recoverInterrupted(handle);
   db = handle;
   dbPath = path;
   return handle;
@@ -102,9 +101,10 @@ function sweepWith(handle: DatabaseSync, maxAgeMs: number): void {
   } catch {}
   try {
     const rows = handle.prepare("SELECT id, relative_path FROM tombstones").all() as { id: string; relative_path: string }[];
+    const base = resolve(dataDir());
     for (const t of rows) {
-      const full = join(dataDir(), t.relative_path);
-      if (!full.startsWith(dataDir() + "/")) continue;
+      const full = resolve(join(dataDir(), t.relative_path));
+      if (full !== base && !full.startsWith(base + sep)) continue;
       try {
         if (!existsSync(full)) {
           handle.prepare("DELETE FROM tombstones WHERE id=?").run(t.id);

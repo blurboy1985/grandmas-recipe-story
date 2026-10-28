@@ -57,6 +57,18 @@ describe("family evidence (milestone D)", () => {
     assert.ok(input.notes.some((n) => n.text === "About two cups."));
   });
 
+  it("rejects a blank clarification answer", async () => {
+    const { store, jobId } = await makeFullDraft();
+    const q = store.getRecipeDetail(jobId)!.clarifications[0].id;
+    assert.throws(
+      () => store.answerClarification(jobId, q, "   "),
+      (e: unknown) => (e as { code?: string }).code === "empty_answer"
+    );
+    const d = store.getRecipeDetail(jobId)!;
+    assert.equal(d.clarifications[0].answer, null);
+    assert.equal(d.clarifications[0].answeredAt, null);
+  });
+
   it("returns a reviewed draft to draft when an answer is added", async () => {
     const { store, jobId } = await makeFullDraft();
     store.setReviewState(jobId, "confirmed");

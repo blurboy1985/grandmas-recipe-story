@@ -202,6 +202,7 @@ export function answerClarification(jobId: string, clarificationId: string, answ
   if (!row) throw Object.assign(new Error("question not found"), { status: 404, code: "not_found" });
   // Treat content as data; cap length to keep the local MVP safe.
   const clean = answer.trim().slice(0, 2000);
+  if (!clean) throw Object.assign(new Error("answer empty"), { status: 400, code: "empty_answer" });
   db.prepare("UPDATE clarifications SET answer=?, answered_at=?, provenance='family' WHERE id=?").run(clean, nowIso(), clarificationId);
   // New evidence returns the draft to draft until re-reviewed.
   db.prepare("UPDATE recipe_versions SET review_state='draft' WHERE id=?").run(rv.id);
@@ -455,8 +456,15 @@ export async function requestTranscription(
         let versionId: string;
         if (original) {
           versionId = original.id;
-          db.prepare("UPDATE transcript_versions SET text=?, segments_json=?, created_at=? WHERE id=?")
+          db.prepare("UPDATE transcript_versions SET text=?, segments_json=?, created_at=?, approved_at=NULL WHERE id=?")
             .run(text, JSON.stringify(segments), at, versionId);
+          // New source words must be approved again before extraction can
+          // use them (changed text clears approval, as edits do).
+          const jobRow = db.prepare("SELECT approved_transcript_version_id FROM jobs WHERE id=?").get(jobId) as
+            { approved_transcript_version_id: string | null };
+          if (jobRow.approved_transcript_version_id === versionId) {
+            db.prepare("UPDATE jobs SET approved_transcript_version_id=NULL WHERE id=?").run(jobId);
+          }
         } else {
           versionId = uuid();
           db.prepare("INSERT INTO transcript_versions (id, recording_id, kind, text, segments_json, created_at, approved_at) VALUES (?,?,?,?,?,?,?)")
