@@ -4,6 +4,36 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Three-minute demo video rendered (28 Oct 2026, Claude Code session)
+
+Daniel asked for an animated demo (problem, hook, solution) with
+ElevenLabs narration, captions and energetic BGM.
+
+- Output: `demo/grandma-recipe-story-demo.mp4` (git-ignored; copy also on Desktop) (1920×1080, 2:59.0,
+  H.264/AAC, −16 LUFS) + `demo/captions.srt`. Not committed, not
+  uploaded — Daniel uploads and pastes the link into the form.
+- Structure: hook (sticky-note "a bit of oil…") → problem ("never
+  written down", invented-quantity AI card) → solution title + three
+  pillars → real app screens (record form/consent/live recording,
+  transcript + segment IDs, recipe card unknowns, clarification answer
+  with provenance, mark reviewed + print) → pipeline diagram → close
+  (deployed URL + GitHub repo URL).
+- Screens captured from a local `build:local` server (fresh throwaway
+  browser profile), not the live site. Demo scenes are labelled
+  "Real app · fictional sample"; narration says the walkthrough uses a
+  fictional sample card. Live Voice is still not claimed as proven.
+- Audio: ElevenLabs TTS (voice "Jessica", `eleven_multilingual_v2`,
+  speed 1.1) with word timestamps driving captions/animation cues.
+  ElevenLabs Music returned 402 (free plan), so BGM is a 30 s looped
+  Sound Effects track (`eleven_text_to_sound_v2`, loop) ducked under the
+  voice. Key read from macOS keychain item `elevenlabs-api-key`.
+- Pipeline (scratchpad, not in repo): `script.json`, `tts.mjs`,
+  `sfxmusic.mjs`/`music.mjs`, `scene.html`, `render.mjs`
+  (puppeteer frames → ffmpeg). Unverified: final cut not yet watched
+  by Daniel; GitHub repo must be public before the video is shared.
+
+---
+
 ## Demo video cut removed (28 Oct 2026)
 
 A 50-second animated demo (title/problem/hook/solution cards, real

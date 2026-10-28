@@ -26,3 +26,6 @@ tsconfig.tsbuildinfo
 
 .wrangler/
 .dev.vars*
+
+# Rendered demo video (69 MB) — kept locally, uploaded separately
+demo/*.mp4

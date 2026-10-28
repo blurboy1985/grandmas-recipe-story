@@ -1,0 +1,352 @@
+1
+00:00:01,000 --> 00:00:02,703
+Ask any grandma for her recipe, and
+
+2
+00:00:02,753 --> 00:00:04,387
+you'll hear something like this.
+
+3
+00:00:04,437 --> 00:00:05,513
+A bit of oil.
+
+4
+00:00:05,563 --> 00:00:06,697
+A pinch of salt.
+
+5
+00:00:06,747 --> 00:00:08,589
+Enough soya sauce for the colour.
+
+6
+00:00:08,639 --> 00:00:10,881
+Until it smells right.
+
+7
+00:00:11,506 --> 00:00:13,604
+Our most loved family recipes were never
+
+8
+00:00:13,654 --> 00:00:15,009
+written down.
+
+9
+00:00:15,059 --> 00:00:16,321
+They live in a voice, in a
+
+10
+00:00:16,371 --> 00:00:18,677
+kitchen, in someone's hands.
+
+11
+00:00:18,727 --> 00:00:20,047
+And when we try to capture them,
+
+12
+00:00:20,097 --> 00:00:21,742
+we lose the best parts:
+
+13
+00:00:21,792 --> 00:00:24,865
+the stories, the 'my mother always said',
+
+14
+00:00:24,915 --> 00:00:26,189
+the little words that make a dish
+
+15
+00:00:26,239 --> 00:00:27,106
+ours.
+
+16
+00:00:27,156 --> 00:00:29,324
+Worse, most AI tools will happily invent
+
+17
+00:00:29,374 --> 00:00:30,914
+the missing numbers.
+
+18
+00:00:30,964 --> 00:00:32,760
+Two tablespoons of salt?
+
+19
+00:00:32,810 --> 00:00:34,537
+That's a guess, dressed up as grandma's
+
+20
+00:00:34,587 --> 00:00:36,015
+recipe.
+
+21
+00:00:36,555 --> 00:00:38,734
+Meet Grandma's Recipe Story.
+
+22
+00:00:38,784 --> 00:00:40,894
+Record her talking through one dish, and
+
+23
+00:00:40,944 --> 00:00:42,623
+it becomes a recipe card.
+
+24
+00:00:42,673 --> 00:00:44,110
+In her words.
+
+25
+00:00:44,160 --> 00:00:46,315
+Her voice kept right beside it.
+
+26
+00:00:46,365 --> 00:00:49,566
+And every unknown left honestly unknown.
+
+27
+00:00:49,616 --> 00:00:51,645
+Built with Meta's Muse models:
+
+28
+00:00:51,695 --> 00:00:54,470
+Voice Transcribe, and Muse Spark.
+
+29
+00:00:55,009 --> 00:00:56,271
+Here's how it works.
+
+30
+00:00:56,321 --> 00:00:57,931
+Tell us who's cooking, the dish, and
+
+31
+00:00:57,981 --> 00:00:59,684
+the language she tells it in.
+
+32
+00:00:59,734 --> 00:01:01,403
+Tick that she's okay with being recorded,
+
+33
+00:01:01,453 --> 00:01:03,423
+because consent comes first.
+
+34
+00:01:03,473 --> 00:01:05,907
+Then press record, right in the browser.
+
+35
+00:01:05,957 --> 00:01:08,369
+One dish, one to five minutes.
+
+36
+00:01:08,419 --> 00:01:11,299
+Nothing is sent until you save.
+
+37
+00:01:11,751 --> 00:01:12,734
+Muse
+
+38
+00:01:12,784 --> 00:01:15,056
+Voice Transcribe turns the recording into
+
+39
+00:01:15,106 --> 00:01:16,229
+text.
+
+40
+00:01:16,279 --> 00:01:17,959
+For this walkthrough, we're opening a
+
+41
+00:01:18,009 --> 00:01:19,538
+fictional sample card.
+
+42
+00:01:19,588 --> 00:01:22,092
+The original transcript is kept unchanged, and
+
+43
+00:01:22,142 --> 00:01:24,472
+every line gets a stable ID.
+
+44
+00:01:24,522 --> 00:01:25,900
+The family can fix a name or
+
+45
+00:01:25,950 --> 00:01:27,897
+ingredient, then approve.
+
+46
+00:01:27,947 --> 00:01:29,859
+Only the approved version is ever sent
+
+47
+00:01:29,909 --> 00:01:32,221
+for extraction.
+
+48
+00:01:32,673 --> 00:01:35,363
+Next, Muse Spark builds the recipe.
+
+49
+00:01:35,413 --> 00:01:36,803
+Look at the ingredients.
+
+50
+00:01:36,853 --> 00:01:38,823
+Three eggs, two tomatoes:
+
+51
+00:01:38,873 --> 00:01:40,030
+she said those.
+
+52
+00:01:40,080 --> 00:01:41,319
+But a pinch of salt?
+
+53
+00:01:41,369 --> 00:01:42,840
+A bit of oil?
+
+54
+00:01:42,890 --> 00:01:44,454
+Spark doesn't guess.
+
+55
+00:01:44,504 --> 00:01:46,822
+The quantity stays unknown, her exact words
+
+56
+00:01:46,872 --> 00:01:48,784
+sit right beside it, and every line
+
+57
+00:01:48,834 --> 00:01:51,048
+links back to its transcript segment.
+
+58
+00:01:51,098 --> 00:01:53,033
+Those references are checked in code, so
+
+59
+00:01:53,083 --> 00:01:55,204
+nothing ungrounded lands on the card.
+
+60
+00:01:55,254 --> 00:01:56,679
+The family story is marked as a
+
+61
+00:01:56,729 --> 00:01:59,349
+paraphrase. Only verified quotes are her real
+
+62
+00:01:59,399 --> 00:02:01,083
+words.
+
+63
+00:02:01,537 --> 00:02:03,832
+Then it asks at most three questions,
+
+64
+00:02:03,882 --> 00:02:05,852
+only about what's missing.
+
+65
+00:02:05,902 --> 00:02:08,209
+How much salt do you usually add?
+
+66
+00:02:08,259 --> 00:02:09,893
+The family answers:
+
+67
+00:02:09,943 --> 00:02:11,936
+half a teaspoon, she uses the small
+
+68
+00:02:11,986 --> 00:02:13,318
+blue spoon.
+
+69
+00:02:13,368 --> 00:02:15,536
+That answer is saved separately, with its
+
+70
+00:02:15,586 --> 00:02:18,380
+own timestamp, as family evidence.
+
+71
+00:02:18,430 --> 00:02:21,960
+It never silently rewrites the draft.
+
+72
+00:02:22,412 --> 00:02:24,487
+Mark the card reviewed, keep her voice
+
+73
+00:02:24,537 --> 00:02:26,402
+right next to the recipe, and print
+
+74
+00:02:26,452 --> 00:02:27,807
+it or save a PDF for the
+
+75
+00:02:27,857 --> 00:02:29,363
+whole family.
+
+76
+00:02:29,413 --> 00:02:31,139
+Cards live in your own browser, and
+
+77
+00:02:31,189 --> 00:02:34,053
+saving, reopening or printing never triggers a
+
+78
+00:02:34,103 --> 00:02:36,101
+paid AI call.
+
+79
+00:02:36,554 --> 00:02:37,677
+Under the hood:
+
+80
+00:02:37,727 --> 00:02:39,290
+record in the browser.
+
+81
+00:02:39,340 --> 00:02:41,856
+Muse Voice Transcribe for the audio.
+
+82
+00:02:41,906 --> 00:02:43,737
+A family approval step.
+
+83
+00:02:43,787 --> 00:02:47,057
+Then Muse Spark for grounded extraction, only
+
+84
+00:02:47,107 --> 00:02:49,035
+when you ask for it.
+
+85
+00:02:49,489 --> 00:02:51,273
+Grandma's Recipe Story.
+
+86
+00:02:51,323 --> 00:02:53,537
+From her voice, to your kitchen table.
+
+87
+00:02:53,587 --> 00:02:55,418
+Try the sample cards today, and record
+
+88
+00:02:55,468 --> 00:02:57,605
+her recipe while you still can.
+
