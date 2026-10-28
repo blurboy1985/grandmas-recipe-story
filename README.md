@@ -3,11 +3,16 @@
 A planned mobile-friendly app for preserving a short cooking recording as an
 editable recipe and family story, with original audio and visible uncertainty.
 
-**Status (28 Oct 2026): Milestones A–D are code-complete — sample flow,
-Spark extraction, Voice transcription, and family evidence/print. Wonder
-final review done (see [review](docs/REVIEW.md)); the interface now wears a
-vintage recipe-box design. One live Spark extraction verified; live Voice
-transcription not yet verified; no demo video yet.**
+**Status (28 Oct 2026): Milestones A–E are code-complete — sample flow,
+Spark extraction, Voice transcription, family evidence/print, and
+browser recording. Wonder final review done (see [review](docs/REVIEW.md)).
+The deployed home is record-first: record in the browser (or upload a
+WAV) on the left, the recipe box on the right, with three fictional
+sample cards pre-loaded. Deployed at
+https://grandma-recipe.danielquek.com (container v6). One live Spark
+extraction verified; live Voice transcription not yet verified on a
+real recording; no demo video (a 50-second cut was made and removed
+the same day at Daniel's request — a new demo is still outstanding).**
 
 The implementation guide is
 [Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md](Grandmas_Recipe_Story_Codex_Muse_Build_Guide.md)
@@ -69,7 +74,7 @@ Checks (all passing in the implementation session):
 ```zsh
 npm run typecheck
 npm run lint           # offline project guard (privacy + grounding)
-npm test               # node:test, 47 tests across 9 suites
+npm test               # node:test, 60 tests across 11 suites
 npm run build
 ```
 
@@ -148,6 +153,23 @@ delete, original-audio playback, and print were verified at store/handler
 level plus `next build` output, a 14-check live HTTP smoke, and a
 headless-Chrome pass (mobile/desktop screenshots, print-to-PDF,
 print-media emulation with zero overflow at 390px).
+
+## Milestone E: browser recording + record-first home (28 Oct 2026)
+
+Implemented 28 October 2026: the home page now opens on recording —
+name, dish, language and consent, then "Record in this browser"
+(`MediaRecorder` with MIME detection, a 1–5 minute timer with
+auto-stop, listen-back preview, and discard/re-record). The take is
+converted in the browser (Web Audio) to mono 16 kHz 16-bit PCM WAV
+and saved through the same byte-validated path as a WAV upload,
+which remains as a fallback. The recipe box sits beside the recorder
+(no scrolling hunt on desktop) and is pre-loaded once with three
+fictional sample cards (Tomato Egg, Steamed Egg with Minced Pork,
+Ginger Chicken with Spring Onion), each labelled and deletable.
+Warmth is carried by type (Fraunces/Caveat) and washi-tape cards —
+no hero photo. Real-device recording (Safari/iPhone, Chrome) is
+still to be proven by Daniel; a demo video was produced and then
+removed the same day at his request, so the demo remains outstanding.
 
 ## Final review + vintage recipe-box design (28 Oct 2026)
 

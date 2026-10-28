@@ -4,6 +4,18 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Demo video cut removed (28 Oct 2026)
+
+A 50-second animated demo (title/problem/hook/solution cards, real
+app screenshots, synthetic macOS narration) was produced at Daniel's
+request, then removed the same day at his request ("it is ugly").
+`grandma-recipe-demo.mp4` was deleted before ever being committed;
+`docs/DEMO.md` is restored to its storyboard-only state, so a demo
+video is outstanding again. `README.md` updated for Milestones A–E,
+the record-first deployed home, and the removed demo.
+
+---
+
 ## Milestone E + record-first home redesign (28 Oct 2026)
 
 Daniel asked: add Milestone E (browser recording); remove the grandma
