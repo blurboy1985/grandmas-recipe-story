@@ -28,7 +28,17 @@ interface Detail {
 }
 
 export default function RecipePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id: paramId } = use(params);
+  // Static-export shell (Worker migration): the exported recipe page is
+  // built once with the placeholder param "_shell"; the real recipe ID
+  // is the last segment of the URL path. URLs are unchanged
+  // (/recipes/<id>), and local `next dev` keeps using the router param.
+  const [routeId, setRouteId] = useState(paramId === "_shell" ? "" : paramId);
+  useEffect(() => {
+    const seg = window.location.pathname.split("/").filter(Boolean).at(-1) ?? "";
+    if (seg && seg !== "_shell") setRouteId(seg);
+  }, []);
+  const id = routeId;
   const [detail, setDetail] = useState<Detail | null>(null);
   const [error, setError] = useState("");
   const [editText, setEditText] = useState("");
@@ -95,6 +105,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
   }
 
   const refresh = useCallback(async () => {
+    if (!id) return; // shell placeholder not yet resolved to a real ID
     if (LOCAL) {
       const rec = await localGet(id);
       if (!rec) { setError("Could not load this recipe."); return; }

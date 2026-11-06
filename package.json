@@ -16,7 +16,10 @@
     "cf:types": "wrangler types cloudflare/worker-configuration.d.ts",
     "cf:deploy": "npm run build:local && wrangler deploy",
     "cf:dev": "wrangler dev",
-    "build:local": "NEXT_PUBLIC_LOCAL_MODE=1 next build"
+    "build:local": "NEXT_PUBLIC_LOCAL_MODE=1 next build",
+    "build:worker": "node scripts/build-worker.mjs",
+    "cf:staging:dev": "wrangler dev --config wrangler.staging.jsonc",
+    "cf:staging:deploy": "wrangler deploy --config wrangler.staging.jsonc"
   },
   "dependencies": {
     "next": "15.5.27",
