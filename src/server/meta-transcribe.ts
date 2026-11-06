@@ -16,8 +16,10 @@ export interface TranscribeSuccess { ok: true; transcript: string; usage: Transc
 export interface TranscribeFailure { ok: false; code: string; detail: string; retried: boolean; }
 export type TranscribeResult = TranscribeSuccess | TranscribeFailure;
 
-function baseUrl(): string {
-  return process.env.META_BASE_URL || "https://api.meta.ai/v1";
+export type EnvOverrides = Record<string, string | undefined>;
+
+function baseUrl(env?: EnvOverrides): string {
+  return env?.META_BASE_URL || process.env.META_BASE_URL || "https://api.meta.ai/v1";
 }
 
 function safeRequestId(v: unknown): string | null {
@@ -26,12 +28,14 @@ function safeRequestId(v: unknown): string | null {
 
 export async function transcribeAudio(
   bytes: Uint8Array,
-  opts?: { model?: string; fetchImpl?: FetchImpl; filename?: string }
+  opts?: { model?: string; fetchImpl?: FetchImpl; filename?: string; env?: EnvOverrides }
 ): Promise<TranscribeResult> {
-  const key = process.env.META_API_KEY;
+  // The Worker passes its bindings explicitly (deterministic in workerd,
+  // spike S3); Node/tests fall back to process.env, as before.
+  const key = opts?.env?.META_API_KEY || process.env.META_API_KEY;
   if (!key) return { ok: false, code: "missing_key", detail: "META_API_KEY is not set. Live transcription needs a key; sample mode stays available.", retried: false };
   if (!bytes.length) return { ok: false, code: "invalid_audio", detail: "Empty audio.", retried: false };
-  const model = opts?.model || process.env.TRANSCRIBE_MODEL || TRANSCRIBE_MODEL_DEFAULT;
+  const model = opts?.model || opts?.env?.TRANSCRIBE_MODEL || process.env.TRANSCRIBE_MODEL || TRANSCRIBE_MODEL_DEFAULT;
   const runFetch: FetchImpl = opts?.fetchImpl ?? fetch;
   const filename = opts?.filename || "recording.wav";
   let retried = false;
@@ -43,7 +47,7 @@ export async function transcribeAudio(
     const start = Date.now();
     let res: Response;
     try {
-      res = await runFetch(`${baseUrl()}/asr/transcribe`, {
+      res = await runFetch(`${baseUrl(opts?.env)}/asr/transcribe`, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
         body: form,

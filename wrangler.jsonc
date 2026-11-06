@@ -1,4 +1,9 @@
 {
+  // WARNING (branch worker-migration): cloudflare/worker.ts on this
+  // branch is the PLAIN Worker — this config still describes the live
+  // CONTAINER deployment and no longer matches it. Do NOT deploy with
+  // this config until Phase 7 cutover rewrites it. Staging deploys use
+  // wrangler.staging.jsonc only.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "grandma-recipe",
   "main": "cloudflare/worker.ts",

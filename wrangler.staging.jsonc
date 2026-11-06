@@ -1,0 +1,31 @@
+{
+  // STAGING ONLY (Worker migration, Phase 4/5). Deploys the plain Worker
+  // as a SEPARATE Worker named grandma-recipe-staging on workers.dev.
+  // It has NO routes and NO custom domain, so it cannot touch
+  // grandma-recipe.danielquek.com. Production config stays in
+  // wrangler.jsonc and is only changed at Phase 7 cutover.
+  "name": "grandma-recipe-staging",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/recipes/*"
+    ]
+  },
+  "vars": {
+    "RECIPE_MODEL": "muse-spark-1.3"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}

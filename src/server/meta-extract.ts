@@ -14,8 +14,10 @@ export type ExtractResult = ExtractSuccess | ExtractFailure;
 
 const EFFORTS = new Set(["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
 
-function baseUrl(): string {
-  return process.env.META_BASE_URL || "https://api.meta.ai/v1";
+export type EnvOverrides = Record<string, string | undefined>;
+
+function baseUrl(env?: EnvOverrides): string {
+  return env?.META_BASE_URL || process.env.META_BASE_URL || "https://api.meta.ai/v1";
 }
 
 function num(v: unknown): number | null {
@@ -25,15 +27,17 @@ function num(v: unknown): number | null {
 export async function extractRecipe(
   system: string,
   user: string,
-  opts?: { model?: string; fetchImpl?: FetchImpl }
+  opts?: { model?: string; fetchImpl?: FetchImpl; env?: EnvOverrides }
 ): Promise<ExtractResult> {
-  const key = process.env.META_API_KEY;
+  // The Worker passes its bindings explicitly (deterministic in workerd,
+  // spike S3); Node/tests fall back to process.env, as before.
+  const key = opts?.env?.META_API_KEY || process.env.META_API_KEY;
   if (!key) return { ok: false, code: "missing_key", detail: "META_API_KEY is not set. Live extraction needs a key; sample mode stays available.", retried: false };
-  const model = opts?.model || process.env.RECIPE_MODEL || "muse-spark-1.3";
-  const effort = process.env.RECIPE_REASONING_EFFORT;
+  const model = opts?.model || opts?.env?.RECIPE_MODEL || process.env.RECIPE_MODEL || "muse-spark-1.3";
+  const effort = opts?.env?.RECIPE_REASONING_EFFORT || process.env.RECIPE_REASONING_EFFORT;
   const client = new OpenAI({
     apiKey: key,
-    baseURL: baseUrl(),
+    baseURL: baseUrl(opts?.env),
     timeout: 90_000,
     maxRetries: 0, // one bounded retry below, with full result typing
     fetch: opts?.fetchImpl ?? fetch,
