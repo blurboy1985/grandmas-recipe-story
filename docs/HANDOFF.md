@@ -4,6 +4,86 @@ Updated 28 October 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Worker migration Phases 0–6 done on branch `worker-migration` (7 Nov 2026)
+
+Daniel approved the full Container → plain Worker migration plan
+(`grandma-recipe-worker-migration-plan.md`, in Daniel's files) and all
+five recommended defaults, scoped to Phases 0–6. **The live site is
+untouched; Phase 7 cutover has NOT happened and needs Daniel's separate
+go-ahead.** Full implementation log with numbers:
+`grandma-recipe-worker-migration-log.md` (Daniel's files).
+
+- **Phase 0:** tag `pre-worker-migration` at `306e5cf`; baseline
+  `npm test` 62/62, typecheck, lint; live contract captured (home 200,
+  sample-audio byte-identical to `samples/sample.wav`, error shapes for
+  transcribe/extract).
+- **Phase 1 spikes (all pass, local workerd):** S1 largest valid WAV
+  (19.2 MB, 32 kHz × 300 s) single + 2-concurrent OK, naive port, no
+  copy optimisation needed. S2 OpenAI SDK 7.45.0 works in workerd —
+  canned 200/401/429/500 map to ok/`bad_credentials`/`rate_limited`/
+  `provider_error`; the pre-approved direct-fetch fallback was NOT
+  needed. S3 `process.env` carries bindings natively under
+  `nodejs_compat`; adapters still gained an explicit optional `env`
+  opt (Worker passes bindings; Node/tests keep `process.env`).
+  `AbortSignal.timeout` fires correctly; simulated 35 s upstream wait
+  survives. Real 90–180 s edge round trip remains unmeasured (needs a
+  real key on a deployed Worker).
+- **Phase 2:** `next.config.mjs` now `output: "export"`. New
+  `scripts/build-worker.mjs` (`npm run build:worker`) stashes
+  `src/app/api` during the export build and always restores it — the
+  nine route files stay in the repo for local server-mode dev; nothing
+  was deleted. Recipe shell: `src/app/recipes/[id]/layout.tsx` exports
+  `generateStaticParams` → one `_shell` page; the recipe page resolves
+  its ID from `window.location.pathname` (URLs unchanged).
+  `samples/sample.wav` also ships as `public/sample.wav`.
+- **Phase 3:** `cloudflare/worker.ts` is now a plain Worker: static
+  assets, recipe-shell serving, `/api/sample-audio` rewritten to the
+  sample.wav asset (same URL/headers), and faithful ports of
+  `/api/ai/transcribe` + `/api/ai/extract` reusing `src/server/*`
+  (same shapes/codes; grounding re-validation kept). The six
+  server-mode routes are not ported and 404 as JSON. `store.ts`/`db.ts`
+  are not imported. One porting bug was caught in verification and
+  fixed: two error branches passed `{ status }` instead of the numeric
+  status to the JSON helper (missing_key surfaced as 500; now 400).
+- **Phase 4:** staging config `wrangler.staging.jsonc` (Worker name
+  `grandma-recipe-staging`, `workers_dev: true`, NO routes/domain,
+  assets `./out` + `run_worker_first` for `/api/*` and `/recipes/*`,
+  var `RECIPE_MODEL=muse-spark-1.3`). Exported bundles grepped clean
+  for `META_API_KEY`. Production-config comment added to
+  `wrangler.jsonc` warning it no longer matches the branch's worker.ts
+  until Phase 7. **Blocked:** wrangler CLI is not authenticated on the
+  build VM, so (a) whether the existing `META_API_KEY` secret carries
+  over on a same-name production redeploy is UNVERIFIED, and (b) no
+  secret could be set for staging.
+- **Phase 5:** staging deployed via `wrangler deploy --temporary` to a
+  temporary preview account:
+  **https://grandma-recipe-staging.subsequent-age.workers.dev**
+  (version `58ee2112-a9ae-4420-9239-861463b29040`, 53 assets, Worker
+  startup 46 ms). Temporary-account URLs are ephemeral and this is NOT
+  Daniel's Cloudflare account; re-deploying to his account needs
+  `wrangler login` (or an API token) first. Live domain untouched.
+- **Phase 6:** local staging Worker passed a 17/17 real-Chromium
+  (Playwright) suite: home + auto-seeded sample cards, sample card
+  renders fully, IndexedDB persistence across reload, WAV upload →
+  card → transcribe/extract both fail VISIBLY with `missing_key`
+  (no sample fallback), local delete, mobile viewport (390×844), and
+  network discipline (only `/api/sample-audio`, `/api/ai/transcribe`,
+  `/api/ai/extract` ever called; zero page errors). Edge (workers.dev)
+  GET surface verified by HTTP: home 200 (12,734 B, tagline + sample
+  names), shell byte-match, sample-audio byte-identical with the old
+  headers, vestige routes 404. **Not verified:** real Voice/Spark
+  calls (blocked on the staging secret), and edge POST behaviour from
+  the build VM — POSTs from this VM through its egress proxy to
+  `*.workers.dev` hang at transport level (proven environmental: POST
+  to an asset path with no Worker involvement also hangs; POSTs to the
+  live custom domain work; all POSTs pass on local workerd).
+- **Next task:** Daniel's go/no-go for Phase 7. Before cutover:
+  authenticate wrangler, confirm the production secret via
+  `wrangler secret list`, create the Phase 0 throwaway IndexedDB card
+  on the live origin in a test browser profile, then follow the plan.
+
+---
+
 ## Landing page: one light section (28 Oct 2026, revised same day)
 
 Daniel asked: lighter theme, far fewer words, old photos + animated
