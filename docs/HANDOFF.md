@@ -1,6 +1,71 @@
 # Handoff — deployed to Cloudflare, public (no login)
 
-Updated 28 October 2026 (Muse session, Asia/Singapore).
+Updated 7 November 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Worker migration: Daniel-account staging deployed (7 Nov 2026, later session)
+
+Continuation of Phases 5–6 below. **Live site still untouched; Phase 7
+cutover has NOT happened.** Daniel created a scoped Cloudflare API token
+(`muse-grandma-worker-staging`: User Details Read; Account Workers
+Scripts Edit + Account Settings Read; his single account only) and
+stored it through Muse's secure credential flow. The real token is
+never visible to the agent; a connector helper
+(`custom.cloudflare`, host `api.cloudflare.com`) calls the API through
+a surrogate exchange.
+
+- **Token verified:** `GET /user/tokens/verify` → active. Account
+  confirmed via API: `2b1f3493e8bbdea98825e1c13bf04a66`
+  (Daniel.tianwen@gmail.com's Account), matching the dashboard.
+- **Production secret question answered as far as possible
+  pre-cutover:** `GET .../workers/scripts/grandma-recipe/secrets`
+  (names/types only; values are write-only) shows `META_API_KEY`
+  present as a `secret_text` binding on the production Worker, and
+  script settings confirm the same binding. Its survival across the
+  Phase 7 same-name redeploy remains to be proven at cutover, but the
+  secret exists on the production script today. Production was not
+  modified in any way.
+- **Wrangler auth solved without OAuth:** a launcher feeds wrangler
+  the credential surrogate via `CLOUDFLARE_API_TOKEN` (in-memory only,
+  never printed/logged/written). `wrangler whoami` authenticated as
+  Daniel's account. (Wrangler printed an "unable to retrieve email"
+  note despite the token carrying User Details Read; account
+  identification succeeded, which is what deploys need.)
+- **Staging deployed to Daniel's account:** `npm run build:worker`,
+  then `wrangler deploy --config wrangler.staging.jsonc` →
+  **https://grandma-recipe-staging.daniel-tianwen.workers.dev**,
+  version `c8b25f3f-00c6-49fd-8a69-24682abc4a71`, 53 assets, Worker
+  startup 25 ms. The staging config has no routes/custom domain.
+- **Staging verification (Daniel's account):** staging secret list is
+  empty (expected; see blocker). GET surface all PASS: `/` 200
+  (12,734 B, tagline + sample name, 0.86 s), `/recipes/<uuid>` 200
+  byte-identical to the exported shell, `/api/sample-audio` 200 with
+  the original headers and a byte-identical WAV, JPG 200, vestige
+  `GET /api/recipes` → JSON 404 as designed.
+- **Still NOT verified:** (1) edge POSTs from the build VM to the new
+  workers.dev URL hang exactly as before (curl timeout, 0 bytes;
+  proven environmental egress-proxy behaviour — GETs to the same URL
+  work, all POSTs pass on local workerd, POSTs to the live custom
+  domain work). A browser-based check from a different network closes
+  this. (2) Real Voice/Spark calls on staging: staging needs a
+  `META_API_KEY` **value**, which exists only as the production secret
+  and cannot be read back or copied between Workers. Daniel must
+  supply the Meta key once through a secure page (arranged by the
+  parent agent), after which it can be set on
+  `grandma-recipe-staging` via the wrangler launcher and the two real
+  AI calls plus the long-wait (S3c) measurement can run.
+- **Assessment only, NOT executed:** a `wrangler versions upload`
+  preview against the production script was considered for inheriting
+  the production secret without moving live traffic. Not done: the
+  branch's `cloudflare/worker.ts` drops the Durable Object class the
+  production config binds, so an upload against production risks DO
+  migration/deletion semantics (plan risk R6) at exactly the wrong
+  moment, and preview-URL/secret behaviour cannot be confirmed without
+  running it. The staging-secret route above is the safer path.
+- **Live re-check at end:** `GET /` 200 (12,734 B, tagline present),
+  `/api/sample-audio` 200, `POST /api/ai/extract {}` → 400
+  `empty_transcript`, unchanged.
 
 ---
 
