@@ -62,6 +62,43 @@ Full detail: `~/workspace/your_files/grandma-recipe-worker-migration-log.md`
 
 ---
 
+## Upload resampling fix — branch `fix/resample-uploads` (7 Nov 2026)
+
+Daniel approved the follow-up named in the Phase 7 entry above
+("Implement the resample uploads before sending"). Done on the separate
+branch `fix/resample-uploads` (from `worker-migration` at the Phase 7
+commit) in an isolated worktree, so the soak is undisturbed.
+**Not merged, not in production: staging only so far.**
+
+- **The fix:** `src/server/meta-transcribe.ts` now runs every upload
+  through `prepareAudioForMeta` (`src/server/resample.ts`, new) before
+  the Meta fetch. WAVs already at 16/24 kHz are forwarded byte-identical
+  (browser-recorder path unchanged); any other validated rate
+  (8–48 kHz) is resampled by linear interpolation to **24 kHz** and
+  rebuilt as a canonical WAV. `src/server/audio.ts` gained a
+  layout-aware `parseWav` (data-chunk offset/length) that
+  `parseWavHeader` now delegates to — one parser, reused. A
+  `[transcribe] resampled upload <from> Hz -> 24000 Hz` line is logged
+  (rates only). Response shape and error contract unchanged. Both the
+  Next.js route and the Worker port share this path via the adapter, as
+  does the local server-mode store path.
+- **Checks:** tests **70/70** (62 baseline + 6 resampler unit tests in
+  `tests/resample.test.ts` + 2 adapter tests in
+  `tests/transcription.test.ts`: a 32 kHz upload reaches the mocked Meta
+  fetch at 24 kHz with duration intact; a 16 kHz upload arrives
+  byte-identical); typecheck and lint pass.
+- **Staging:** deployed to `grandma-recipe-staging` from this branch
+  (version id + secret check recorded in
+  `~/workspace/your_files/grandma-resample-fix-notes.md`). External
+  proof still pending: the original 32 kHz test WAV must be re-sent to
+  staging via the Hoppscotch proxy route and return HTTP 200 (VM
+  egress cannot POST to *.workers.dev).
+- **Remaining work:** after the external retest passes, merge
+  `fix/resample-uploads` into `worker-migration` and deploy to
+  production as a small post-cutover follow-up (its own go-ahead).
+
+---
+
 ## Worker migration: Daniel-account staging deployed (7 Nov 2026, later session)
 
 Continuation of Phases 5–6 below. **Live site still untouched; Phase 7

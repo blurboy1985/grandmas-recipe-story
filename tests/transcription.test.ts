@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { transcribeAudio } from "../src/server/meta-transcribe.ts";
+import { parseWavHeader } from "../src/server/audio.ts";
 import { transcriptionCacheKey } from "../src/server/store.ts";
 
 before(() => {
@@ -16,6 +17,19 @@ before(() => {
 function wavBytes(seconds: number): Uint8Array {
   const rate = 16000, n = rate * seconds;
   const data = Buffer.alloc(n * 2, 1);
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0); header.writeUInt32LE(36 + data.length, 4); header.write("WAVE", 8);
+  header.write("fmt ", 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22); header.writeUInt32LE(rate, 24);
+  header.writeUInt32LE(rate * 2, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34);
+  header.write("data", 36); header.writeUInt32LE(data.length, 40);
+  return new Uint8Array(Buffer.concat([header, data]));
+}
+
+function wavBytesAtRate(rate: number, seconds: number): Uint8Array {
+  const n = Math.round(rate * seconds);
+  const data = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) data.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / rate) * 12000), i * 2);
   const header = Buffer.alloc(44);
   header.write("RIFF", 0); header.writeUInt32LE(36 + data.length, 4); header.write("WAVE", 8);
   header.write("fmt ", 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20);
@@ -91,6 +105,34 @@ describe("transcription", () => {
     assert.deepEqual(seen!.requestJson, { model: "muse-voice-transcribe-1.0", audioEncoding: "WAV", mode: "PUSH_TO_TALK" });
     assert.equal(seen!.audioType, "audio/wav");
     assert.match(seen!.auth ?? "", /^Bearer .+/);
+  });
+
+  it("resamples a 32 kHz upload to 24 kHz before the Meta fetch", async () => {
+    let audioSeen: Uint8Array | null = null;
+    const fetchImpl = (async (_url: unknown, init: unknown) => {
+      const form = (init as { body: FormData }).body;
+      audioSeen = new Uint8Array(await (form.get("audio") as Blob).arrayBuffer());
+      return okResponse("Resampled soup.");
+    }) as typeof fetch;
+    const r = await transcribeAudio(wavBytesAtRate(32000, 120), { fetchImpl });
+    assert.equal(r.ok, true);
+    const parsed = parseWavHeader(audioSeen!);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.info?.sampleRate, 24000);
+    assert.equal(parsed.info?.durationMs, 120000);
+  });
+
+  it("forwards a 16 kHz upload to the Meta fetch byte-identical", async () => {
+    const input = wavBytesAtRate(16000, 120);
+    let audioSeen: Uint8Array | null = null;
+    const fetchImpl = (async (_url: unknown, init: unknown) => {
+      const form = (init as { body: FormData }).body;
+      audioSeen = new Uint8Array(await (form.get("audio") as Blob).arrayBuffer());
+      return okResponse("Untouched soup.");
+    }) as typeof fetch;
+    const r = await transcribeAudio(input, { fetchImpl });
+    assert.equal(r.ok, true);
+    assert.deepEqual(audioSeen!, input);
   });
 
   it("reports missing key visibly instead of sample fallback", async () => {
