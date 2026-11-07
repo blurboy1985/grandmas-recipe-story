@@ -4,6 +4,64 @@ Updated 7 November 2026 (Muse session, Asia/Singapore).
 
 ---
 
+## Worker migration: Phase 7 CUTOVER DONE — live domain on the plain Worker (7 Nov 2026)
+
+Daniel gave the explicit go-ahead ("Proceed to Phase 7 cutover").
+**grandma-recipe.danielquek.com is now served by the plain Worker.**
+Full detail: `~/workspace/your_files/grandma-recipe-worker-migration-log.md`
+(Phase 7 section).
+
+- **New production version: `275da4b5-715a-472a-8592-b349d7ad27d6`**
+  (deployed 2026-11-07T00:18:32Z, 100% traffic). Rollback target:
+  `27ea6484-db9a-4924-a08f-570ffa6ff9df` (pre-cutover container version)
+  via `wrangler rollback 27ea6484-db9a-4924-a08f-570ffa6ff9df`.
+- **Changed files (this session):** `cloudflare/worker.ts` — the exact
+  pre-migration `GrandmaContainer` class restored as a present-but-unused
+  export (handler never calls it; keeps rollback a plain version
+  rollback during the soak). `wrangler.jsonc` — rewritten to the staging
+  shape (assets + `nodejs_compat`) plus the custom-domain route, with
+  the `GRANDMA_CONTAINER` binding and `exports` block kept. The old
+  `containers:` image block is NOT in the new config: a first deploy
+  attempt including it failed before upload ("Container image
+  preparation is not enabled for this account" — the scoped API token
+  cannot prepare images); production was verified untouched after that
+  failure. The image stays in the registry and the rollback version
+  keeps its own full container config.
+- **Secret continuity proven:** `META_API_KEY` present (secret_text) on
+  `grandma-recipe` both immediately before and after the deploy.
+- **Post-cutover verification (all on the live domain):** home 200 /
+  12,734 B with tagline + sample card; recipe shell byte-identical;
+  sample-audio byte-identical with original headers; vestige
+  `/api/recipes` JSON 404; `extract {}` → 400 `empty_transcript`;
+  transcribe empty form → 400 `audio_required`; **real Spark extraction
+  200 in 34.7 s** (muse-spark-1.3, grounded, dish tomato egg stir-fry);
+  real transcription with the 32 kHz test WAV → same 502
+  `provider_error` (Meta 503) as staging and the old live container
+  (parity, not a regression); **real transcription with the 24 kHz
+  file → 200 in 19.9 s with a full accurate transcript** — the plain
+  Worker completes real transcriptions on the live domain.
+- **Transcription 503 root cause (diagnosed in parallel):** Meta Voice
+  accepts WAV only at 16/24 kHz; the 32 kHz test file gets a misleading
+  503. **Follow-up (not Phase 7, not done):** `src/server/audio.ts`
+  still accepts 8–48 kHz — narrow it to 16/24 kHz or resample uploads,
+  in a small separate deploy. Browser recordings are already resampled
+  to 16 kHz by the app.
+- **Container quiescence:** 100% traffic on the Worker version; the
+  handler contains no container call, so no instance can start; any
+  instance alive at cutover idles out on its 10-minute timeout.
+  (Containers API listing is outside the scoped token's permissions —
+  403 — so this rests on deployment/binding evidence + timings.)
+- **Checks:** `npm run build:worker` OK; tests 62/62; typecheck and
+  lint pass; deploy dry-run showed the DO binding retained with no
+  deletion warnings.
+- **Remaining work:** 14-day soak from 7 Nov 2026 + one clean billing
+  cycle, then Phase 8 (remove container/DO config + vestige code) as
+  its own step. Branch `worker-migration` is NOT merged. The audio.ts
+  sample-rate follow-up above is a separate small task whenever Daniel
+  wants it.
+
+---
+
 ## Worker migration: Daniel-account staging deployed (7 Nov 2026, later session)
 
 Continuation of Phases 5–6 below. **Live site still untouched; Phase 7

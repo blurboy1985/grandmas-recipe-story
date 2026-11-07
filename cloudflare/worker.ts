@@ -15,6 +15,11 @@
 // The six server-mode API routes (recipes/uploads/media) are NOT ported:
 // the deployed LOCAL-mode build never calls them. Their files remain in
 // src/app/api for local dev; store.ts/db.ts are not imported here.
+import { DurableObject } from "cloudflare:workers";
+
+const CONTAINER_PORT = 8080;
+const CONTAINER_INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+
 import { validateUpload } from "../src/server/audio.ts";
 import { transcribeAudio } from "../src/server/meta-transcribe.ts";
 import { buildExtractionMessages, type FamilyNote } from "../src/server/extraction-prompt.ts";
@@ -24,6 +29,9 @@ import type { Segment } from "../src/server/segments.ts";
 
 export interface WorkerEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
+  // Present-but-unused during the post-cutover soak (see GrandmaContainer
+  // below); the fetch handler never touches it.
+  GRANDMA_CONTAINER?: DurableObjectNamespace;
   META_API_KEY?: string;
   META_BASE_URL?: string;
   RECIPE_MODEL?: string;
@@ -127,6 +135,87 @@ async function handleSampleAudio(request: Request, env: WorkerEnv): Promise<Resp
     status: 200,
     headers: { "Content-Type": "audio/wav", "Cache-Control": "public, max-age=86400" },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 cutover (Worker migration plan §4/§5): the GrandmaContainer
+// Durable Object class is kept exported and bound (GRANDMA_CONTAINER) but
+// is NEVER called by the fetch handler below. Keeping it present-but-unused
+// for the 14-day soak means rollback stays a plain `wrangler rollback` to
+// the pre-cutover version and no Durable Object deletion semantics are
+// triggered at cutover. The implementation is the exact pre-migration
+// class (git tag `pre-worker-migration`). Removal is Phase 8, after the
+// soak. Do not call this from the handler.
+// ---------------------------------------------------------------------------
+export class GrandmaContainer extends DurableObject<WorkerEnv> {
+  private starting: Promise<void> | undefined;
+
+  constructor(ctx: DurableObjectState, env: WorkerEnv) {
+    super(ctx, env);
+    const container = ctx.container;
+    if (container?.running) {
+      void ctx.blockConcurrencyWhile(() =>
+        container.setInactivityTimeout(CONTAINER_INACTIVITY_TIMEOUT_MS),
+      );
+    }
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    this.starting ??= this.startAndWaitForPort().finally(() => {
+      this.starting = undefined;
+    });
+    await this.starting;
+
+    const url = new URL(request.url);
+    url.protocol = "http:";
+    url.host = "container";
+    const forwarded = new Request(url, request);
+    forwarded.headers.delete("host");
+    return this.ctx.container!.getTcpPort(CONTAINER_PORT).fetch(forwarded);
+  }
+
+  private async startAndWaitForPort(): Promise<void> {
+    const container = this.ctx.container;
+    if (!container) throw new Error("No container is configured");
+    if (!container.running) {
+      container.start({
+        image: container.images.app,
+        instance: "standard-1",
+        // Outbound is needed only for Meta Voice/Spark calls from the
+        // stateless AI routes. The key comes from the Worker secret
+        // binding and is passed to the container process only; it is
+        // never sent to the browser.
+        enableInternet: true,
+        env: {
+          NODE_ENV: "production",
+          APP_MODE: "sample",
+          DATA_DIR: "/data/app",
+          RECIPE_MODEL: "muse-spark-1.3",
+          ...(this.env.META_API_KEY ? { META_API_KEY: this.env.META_API_KEY } : {}),
+        },
+      });
+    }
+    await container.setInactivityTimeout(CONTAINER_INACTIVITY_TIMEOUT_MS);
+
+    const port = container.getTcpPort(CONTAINER_PORT);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      try {
+        const response = await port.fetch("http://container/", {
+          signal: AbortSignal.timeout(1000),
+        });
+        await response.body?.cancel();
+        if (!response.ok) throw new Error(`Readiness returned ${response.status}`);
+        return;
+      } catch (error) {
+        lastError = error;
+        await scheduler.wait(200);
+      }
+    }
+    throw new Error(`Container did not become ready on port ${CONTAINER_PORT}`, {
+      cause: lastError,
+    });
+  }
 }
 
 export default {

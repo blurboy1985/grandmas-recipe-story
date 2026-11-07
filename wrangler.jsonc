@@ -1,30 +1,43 @@
 {
-  // WARNING (branch worker-migration): cloudflare/worker.ts on this
-  // branch is the PLAIN Worker — this config still describes the live
-  // CONTAINER deployment and no longer matches it. Do NOT deploy with
-  // this config until Phase 7 cutover rewrites it. Staging deploys use
-  // wrangler.staging.jsonc only.
+  // PRODUCTION — Phase 7 cutover config (Worker migration).
+  // Same plain Worker + static assets shape as wrangler.staging.jsonc
+  // (verified on grandma-recipe-staging), PLUS the custom-domain route.
+  // Per the migration plan (Phase 7 task 1, §5 rollback), this deploy
+  // KEEPS the GrandmaContainer class export, the GRANDMA_CONTAINER
+  // binding and the exports block present but unused: the new handler
+  // never calls the container, so rollback to the pre-cutover version
+  // stays a plain `wrangler rollback` and no Durable Object deletion
+  // semantics are triggered. Removal is Phase 8, after the 14-day soak.
+  // NOTE: the old `containers:` image block is deliberately NOT carried
+  // into this config — a first cutover deploy attempt including it
+  // failed before upload with "Container image preparation is not
+  // enabled for this account" (the scoped API token cannot prepare
+  // container images). The image itself stays in the registry and the
+  // pre-cutover version keeps its own full container config, so a
+  // version rollback restores it unchanged. META_API_KEY is a secret
+  // binding managed outside this file (wrangler secret / dashboard);
+  // it is not defined here.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "grandma-recipe",
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-10-28",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "routes": [
     {
       "pattern": "grandma-recipe.danielquek.com",
       "custom_domain": true
     }
   ],
-  "containers": [
-    {
-      "class_name": "GrandmaContainer",
-      "scheduling_policy": "durable_object",
-      "images": {
-        "app": {
-          "image": "registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer@sha256:c2b68f9d3df1296a6d56d5f161a62d498da6422ab82a79ba3516048610c8b318"
-        }
-      }
-    }
-  ],
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/recipes/*"
+    ]
+  },
   "durable_objects": {
     "bindings": [
       {
@@ -40,7 +53,8 @@
     }
   },
   "vars": {
-    "APP_MODE": "sample"
+    "APP_MODE": "sample",
+    "RECIPE_MODEL": "muse-spark-1.3"
   },
   "observability": {
     "enabled": true,
