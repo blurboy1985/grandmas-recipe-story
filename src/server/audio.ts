@@ -6,7 +6,11 @@ export const MAX_DURATION_MS = 300_000;
 
 export interface WavInfo { durationMs: number; sampleRate: number; channels: number; bitsPerSample: number; byteSize: number; }
 
-export function parseWavHeader(bytes: Uint8Array): { ok: boolean; error?: string; info?: WavInfo } {
+// ParsedWav extends the header result with the data chunk's location, for
+// callers that need the PCM samples themselves (e.g. resample.ts).
+export interface ParsedWav { ok: boolean; error?: string; info?: WavInfo; dataOffset?: number; dataLength?: number; }
+
+export function parseWav(bytes: Uint8Array): ParsedWav {
   if (bytes.length < 44) return { ok: false, error: "too_small" };
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
   const tag = (o: number, n: number) => String.fromCharCode(...bytes.subarray(o, o + n));
@@ -23,16 +27,22 @@ export function parseWavHeader(bytes: Uint8Array): { ok: boolean; error?: string
   // Find data chunk (durable for JUNK/LIST headers).
   let offset = 12;
   let dataBytes = 0;
+  let dataOffset = 0;
   while (offset + 8 <= bytes.length) {
     const id = tag(offset, 4);
     const size = view.getUint32(offset + 4, true);
-    if (id === "data") { dataBytes = size; break; }
+    if (id === "data") { dataBytes = size; dataOffset = offset + 8; break; }
     offset += 8 + size + (size % 2);
   }
   if (!dataBytes) return { ok: false, error: "no_data" };
   const bytesPerSecond = sampleRate * channels * (bitsPerSample / 8);
   const durationMs = Math.round((dataBytes / bytesPerSecond) * 1000);
-  return { ok: true, info: { durationMs, sampleRate, channels, bitsPerSample, byteSize: bytes.length } };
+  return { ok: true, info: { durationMs, sampleRate, channels, bitsPerSample, byteSize: bytes.length }, dataOffset, dataLength: dataBytes };
+}
+
+export function parseWavHeader(bytes: Uint8Array): { ok: boolean; error?: string; info?: WavInfo } {
+  const { ok, error, info } = parseWav(bytes);
+  return { ok, error, info };
 }
 
 export function validateUpload(bytes: Uint8Array): { ok: boolean; error?: string; info?: WavInfo } {

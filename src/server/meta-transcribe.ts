@@ -5,6 +5,11 @@
 // https://api.meta.ai/v1/asr/transcribe with `request` (JSON:
 // model/audioEncoding/mode) and `audio` (WAV bytes) parts, bearer auth,
 // JSON response carrying the transcript field.
+// Meta accepts WAV only at 16/24 kHz; prepareAudioForMeta (resample.ts)
+// converts any other validated upload rate to 24 kHz before sending —
+// files already at 16/24 kHz are forwarded byte-identical.
+import { prepareAudioForMeta } from "./resample.ts";
+
 export type FetchImpl = typeof fetch;
 
 export const TRANSCRIBE_MODEL_DEFAULT = "muse-voice-transcribe-1.0";
@@ -38,11 +43,16 @@ export async function transcribeAudio(
   const model = opts?.model || opts?.env?.TRANSCRIBE_MODEL || process.env.TRANSCRIBE_MODEL || TRANSCRIBE_MODEL_DEFAULT;
   const runFetch: FetchImpl = opts?.fetchImpl ?? fetch;
   const filename = opts?.filename || "recording.wav";
+  const prepared = prepareAudioForMeta(bytes);
+  if (prepared.resampled) {
+    // Rates only — never audio content — so this is safe for Worker logs.
+    console.log(`[transcribe] resampled upload ${prepared.sourceRate} Hz -> ${prepared.sentRate} Hz for Meta Voice`);
+  }
   let retried = false;
   for (let attempt = 0; attempt < 2; attempt++) {
     const form = new FormData();
     form.append("request", new Blob([JSON.stringify({ model, audioEncoding: "WAV", mode: "PUSH_TO_TALK" })], { type: "application/json" }));
-    const copy = new Uint8Array(bytes);
+    const copy = new Uint8Array(prepared.bytes);
     form.append("audio", new Blob([copy.buffer as ArrayBuffer], { type: "audio/wav" }), filename);
     const start = Date.now();
     let res: Response;
