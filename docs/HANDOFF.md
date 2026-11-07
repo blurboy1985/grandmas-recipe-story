@@ -67,8 +67,9 @@ Full detail: `~/workspace/your_files/grandma-recipe-worker-migration-log.md`
 Daniel approved the follow-up named in the Phase 7 entry above
 ("Implement the resample uploads before sending"). Done on the separate
 branch `fix/resample-uploads` (from `worker-migration` at the Phase 7
-commit) in an isolated worktree, so the soak is undisturbed.
-**Not merged, not in production: staging only so far.**
+commit) in an isolated worktree, so the soak was undisturbed.
+**MERGED and DEPLOYED TO PRODUCTION on 7 Nov 2026** — see the
+production note at the end of this section.
 
 - **The fix:** `src/server/meta-transcribe.ts` now runs every upload
   through `prepareAudioForMeta` (`src/server/resample.ts`, new) before
@@ -90,12 +91,31 @@ commit) in an isolated worktree, so the soak is undisturbed.
 - **Staging:** deployed to `grandma-recipe-staging` from this branch
   (version id + secret check recorded in
   `~/workspace/your_files/grandma-resample-fix-notes.md`). External
-  proof still pending: the original 32 kHz test WAV must be re-sent to
-  staging via the Hoppscotch proxy route and return HTTP 200 (VM
-  egress cannot POST to *.workers.dev).
-- **Remaining work:** after the external retest passes, merge
-  `fix/resample-uploads` into `worker-migration` and deploy to
-  production as a small post-cutover follow-up (its own go-ahead).
+  proof PASSED: the original 32 kHz test WAV, re-sent to staging via
+  the Hoppscotch proxy route, returned **HTTP 200** with a transcript
+  (VM egress cannot POST to *.workers.dev, hence the proxy route).
+- **Production deploy (7 Nov 2026, Daniel's go-ahead):**
+  `fix/resample-uploads` (059d6f3) merged into `worker-migration`
+  (merge commit `ab4745c`, no conflicts; this file kept both the
+  Phase 7 and resample sections). Gates in the merged tree: tests
+  **70/70**, typecheck pass, lint pass, `build:worker` pass;
+  production config unchanged from the Phase 7 shape (container class
+  + binding present-but-unused, no `containers:` block) and
+  `deploy --dry-run` showed the GRANDMA_CONTAINER binding retained
+  with zero deletion/migration warnings. Deployed version
+  **`8153689f-1495-4c3f-93c7-11a0c7815129`** (100%; rollback target
+  for this deploy is the Phase 7 version
+  `275da4b5-715a-472a-8592-b349d7ad27d6`). `META_API_KEY` present by
+  name before AND after. Live verification: `GET /` 200 (12,734 B);
+  sample-audio byte-identical (64,044 B); `/api/recipes` 404 JSON;
+  extract `{}` → 400 `empty_transcript`; transcribe empty form → 400
+  `audio_required`; **acceptance: the original 32 kHz WAV — 502 on
+  production before the fix — returned 200 in 22.3 s** with a full
+  transcript (model muse-voice-transcribe-1.0). The live domain now
+  resamples uploads server-side. Full record:
+  `~/workspace/your_files/grandma-recipe-worker-migration-log.md`.
+- **Remaining work:** none for this fix. The migration soak and
+  Phase 8 (after 14 days + one clean billing cycle) are unchanged.
 
 ---
 
