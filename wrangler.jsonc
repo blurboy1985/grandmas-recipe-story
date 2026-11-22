@@ -1,22 +1,19 @@
 {
-  // PRODUCTION — Phase 7 cutover config (Worker migration).
-  // Same plain Worker + static assets shape as wrangler.staging.jsonc
-  // (verified on grandma-recipe-staging), PLUS the custom-domain route.
-  // Per the migration plan (Phase 7 task 1, §5 rollback), this deploy
-  // KEEPS the GrandmaContainer class export, the GRANDMA_CONTAINER
-  // binding and the exports block present but unused: the new handler
-  // never calls the container, so rollback to the pre-cutover version
-  // stays a plain `wrangler rollback` and no Durable Object deletion
-  // semantics are triggered. Removal is Phase 8, after the 14-day soak.
-  // NOTE: the old `containers:` image block is deliberately NOT carried
-  // into this config — a first cutover deploy attempt including it
-  // failed before upload with "Container image preparation is not
-  // enabled for this account" (the scoped API token cannot prepare
-  // container images). The image itself stays in the registry and the
-  // pre-cutover version keeps its own full container config, so a
-  // version rollback restores it unchanged. META_API_KEY is a secret
-  // binding managed outside this file (wrangler secret / dashboard);
-  // it is not defined here.
+  // PRODUCTION — plain Worker + static assets (Worker migration).
+  // Same shape as wrangler.staging.jsonc (verified on
+  // grandma-recipe-staging), PLUS the custom-domain route.
+  // Phase 8 cleanup (after the 14-day soak, Daniel's go-ahead 22 Nov
+  // 2026) removes the container/DO leftovers in two deploys:
+  //   Deploy 1 (this config): the GRANDMA_CONTAINER durable_objects
+  //     binding is removed. The GrandmaContainer class export and the
+  //     `exports` declaration stay for now — no class deletion yet.
+  //   Deploy 2 (separate): the class export + `exports` block are
+  //     removed and the Durable Object class is deleted via an explicit
+  //     wrangler migration (deleted_classes).
+  // The old `containers:` image block was already dropped at the
+  // Phase 7 cutover (the scoped API token cannot prepare container
+  // images). META_API_KEY is a secret binding managed outside this
+  // file (wrangler secret / dashboard); it is not defined here.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "grandma-recipe",
   "main": "cloudflare/worker.ts",
@@ -36,14 +33,6 @@
     "run_worker_first": [
       "/api/*",
       "/recipes/*"
-    ]
-  },
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "GRANDMA_CONTAINER",
-        "class_name": "GrandmaContainer"
-      }
     ]
   },
   "exports": {

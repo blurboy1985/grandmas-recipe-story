@@ -1,8 +1,8 @@
 // Browser-local recipe box (deployed "local mode" only).
 // Recipes, transcripts and audio Blobs live in IndexedDB on the visitor's
 // own device; the server stores nothing. The pure record functions below
-// mirror src/server/store.ts semantics (approval gating, review resets,
-// separate family evidence) so both modes behave the same. AI calls still
+// mirror the recipe-store semantics (approval gating, review resets,
+// separate family evidence) of the retired server store. AI calls still
 // go to stateless server routes that hold the Meta key server-side.
 import { assignSegments, type Segment } from "../server/segments.ts";
 import { SAMPLE_FIXTURES, sampleFixtureById } from "../server/sample-fixture.ts";

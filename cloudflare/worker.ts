@@ -12,9 +12,10 @@
 //   - proxies the two stateless AI routes to Meta (Voice transcribe,
 //     Spark extract) with META_API_KEY kept as a Worker secret — it is
 //     never sent to the browser.
-// The six server-mode API routes (recipes/uploads/media) are NOT ported:
-// the deployed LOCAL-mode build never calls them. Their files remain in
-// src/app/api for local dev; store.ts/db.ts are not imported here.
+// The six server-mode API routes (recipes/uploads/media) were NOT
+// ported: the deployed LOCAL-mode build never calls them. Phase 8
+// removed those route files and the local-dev store (src/server/
+// store.ts, db.ts) from the repo entirely.
 import { DurableObject } from "cloudflare:workers";
 
 const CONTAINER_PORT = 8080;

@@ -1,15 +1,18 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { createHash } from "node:crypto";
 import { transcribeAudio } from "../src/server/meta-transcribe.ts";
 import { parseWavHeader } from "../src/server/audio.ts";
-import { transcriptionCacheKey } from "../src/server/store.ts";
 
+// Phase 8 (Worker migration): the server store (src/server/store.ts /
+// db.ts) was removed with the vestige local-dev server mode, and with it
+// the store-driven cases that used to live here (cache/dedup/state
+// machine around requestTranscription). What remains are the adapter
+// tests — transcribeAudio is the live path used by both the Next route
+// and the Cloudflare Worker. Three error cases that were previously
+// asserted through the store (bad_credentials, invalid_audio,
+// empty_transcript) are now asserted at the adapter directly; the codes
+// originate in the adapter, so the assertions are unchanged in substance.
 before(() => {
-  process.env.DATA_DIR = mkdtempSync(join(tmpdir(), "grs-transcribe-"));
   // Dummy key for mocked-fetch tests only; no network call is ever made.
   process.env.META_API_KEY = "test-dummy-key-never-sent";
 });
@@ -43,50 +46,8 @@ function okResponse(transcript: string): Response {
   return new Response(JSON.stringify({ transcript, model: "muse-voice-transcribe-1.0" }), { status: 200, headers: { "Content-Type": "application/json" } });
 }
 
-let jobSeq = 0;
-async function makeLiveJob(): Promise<{ store: typeof import("../src/server/store.ts"); jobId: string }> {
-  const store = await import("../src/server/store.ts");
-  jobSeq++;
-  const bytes = wavBytes(120);
-  // Unique sha per job so cache entries never leak across tests.
-  const sha = createHash("sha256").update(bytes).update(String(jobSeq)).digest("hex");
-  const staged = store.stageUpload(bytes, "t.wav");
-  const { id } = store.createUploadRecipe(
-    { uploadId: staged.uploadId, cookName: "T", dishName: `Live Dish ${jobSeq}`, consent: true },
-    { durationMs: 120000, byteSize: bytes.length, sha256: sha }
-  );
-  return { store, jobId: id };
-}
-
 describe("transcription", () => {
-  it("transcribes once, then serves cache without a second call", async () => {
-    const { store, jobId } = await makeLiveJob();
-    let calls = 0;
-    const fetchImpl = (async () => { calls++; return okResponse("Add salt and stir the soup."); }) as typeof fetch;
-    const first = await store.requestTranscription(jobId, { fetchImpl });
-    assert.equal(first.cached, false);
-    assert.equal(calls, 1);
-    const second = await store.requestTranscription(jobId, { fetchImpl });
-    assert.equal(second.cached, true);
-    assert.equal(calls, 1);
-    assert.equal(second.transcriptVersionId, first.transcriptVersionId);
-    const d = store.getRecipeDetail(jobId);
-    assert.equal(d?.processingState, "transcript_ready");
-    assert.equal(d?.originalTranscript?.text, "Add salt and stir the soup.");
-    assert.ok((d?.originalTranscript?.segments.length ?? 0) >= 1);
-  });
-
-  it("deduplicates concurrent requests into one call", async () => {
-    const { store, jobId } = await makeLiveJob();
-    let calls = 0;
-    const fetchImpl = (async () => { calls++; await new Promise((r) => setTimeout(r, 20)); return okResponse("Simmer the broth gently."); }) as typeof fetch;
-    const [a, b] = await Promise.all([store.requestTranscription(jobId, { fetchImpl }), store.requestTranscription(jobId, { fetchImpl })]);
-    assert.equal(calls, 1);
-    assert.equal(a.transcriptVersionId, b.transcriptVersionId);
-  });
-
   it("sends the exact multipart request/audio schema", async () => {
-    const { store, jobId } = await makeLiveJob();
     let seen: { url: string; requestJson: unknown; audioType: string | null; auth: string | null } | null = null;
     const fetchImpl = (async (url: unknown, init: unknown) => {
       const form = (init as { body: FormData }).body;
@@ -100,7 +61,8 @@ describe("transcription", () => {
       };
       return okResponse("Schema check soup.");
     }) as typeof fetch;
-    await store.requestTranscription(jobId, { fetchImpl });
+    const r = await transcribeAudio(wavBytes(120), { fetchImpl });
+    assert.equal(r.ok, true);
     assert.ok(seen!.url.endsWith("/asr/transcribe"));
     assert.deepEqual(seen!.requestJson, { model: "muse-voice-transcribe-1.0", audioEncoding: "WAV", mode: "PUSH_TO_TALK" });
     assert.equal(seen!.audioType, "audio/wav");
@@ -142,19 +104,14 @@ describe("transcription", () => {
       const r = await transcribeAudio(new Uint8Array([1, 2, 3]), { fetchImpl: (async () => okResponse("x")) as typeof fetch });
       assert.equal(r.ok, false);
       if (!r.ok) assert.equal(r.code, "missing_key");
-      const { store, jobId } = await makeLiveJob();
-      await assert.rejects(store.requestTranscription(jobId, { fetchImpl: (async () => okResponse("x")) as typeof fetch }), (e: unknown) => (e as { code?: string }).code === "missing_key");
-      assert.equal(store.getRecipeDetail(jobId)?.processingState, "uploaded");
     } finally { process.env.META_API_KEY = saved; }
   });
 
-  it("surfaces rejected keys without writing a transcript", async () => {
-    const { store, jobId } = await makeLiveJob();
+  it("surfaces rejected keys as bad_credentials", async () => {
     const fetchImpl = (async () => new Response("{}", { status: 401 })) as typeof fetch;
-    await assert.rejects(store.requestTranscription(jobId, { fetchImpl }), (e: unknown) => (e as { code?: string }).code === "bad_credentials");
-    const d = store.getRecipeDetail(jobId);
-    assert.equal(d?.originalTranscript?.text, "");
-    assert.equal(d?.processingState, "uploaded");
+    const r = await transcribeAudio(wavBytes(120), { fetchImpl });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.code, "bad_credentials");
   });
 
   it("retries once on 429, then succeeds", async () => {
@@ -171,48 +128,16 @@ describe("transcription", () => {
   });
 
   it("rejects provider-invalid audio visibly", async () => {
-    const { store, jobId } = await makeLiveJob();
     const fetchImpl = (async () => new Response("{}", { status: 400 })) as typeof fetch;
-    await assert.rejects(store.requestTranscription(jobId, { fetchImpl }), (e: unknown) => (e as { code?: string }).code === "invalid_audio");
-    assert.equal(store.getRecipeDetail(jobId)?.processingState, "uploaded");
+    const r = await transcribeAudio(wavBytes(120), { fetchImpl });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.code, "invalid_audio");
   });
 
-  it("refuses empty transcript output without keeping partial state", async () => {
-    const { store, jobId } = await makeLiveJob();
+  it("refuses empty transcript output", async () => {
     const fetchImpl = (async () => okResponse("   ")) as typeof fetch;
-    await assert.rejects(store.requestTranscription(jobId, { fetchImpl }), (e: unknown) => (e as { code?: string }).code === "empty_transcript");
-    const d = store.getRecipeDetail(jobId);
-    assert.equal(d?.originalTranscript?.text, "");
-    assert.equal(d?.processingState, "uploaded");
-  });
-
-  it("refuses transcription for sample mode", async () => {
-    const store = await import("../src/server/store.ts");
-    const { id } = store.createSampleRecipe({ cookName: "T", consent: true });
-    await assert.rejects(
-      store.requestTranscription(id, { fetchImpl: (async () => okResponse("x")) as typeof fetch }),
-      (e: unknown) => (e as { code?: string }).code === "sample_mode"
-    );
-  });
-
-  it("clears approval when transcription replaces the approved original", async () => {
-    const { store, jobId } = await makeLiveJob();
-    // Approve the still-empty original placeholder (possible via the API),
-    // then transcribe: the new words must not inherit that approval.
-    const originalId = store.getRecipeDetail(jobId)!.originalTranscript!.id;
-    store.approveTranscript(jobId, originalId);
-    assert.equal(store.getRecipeDetail(jobId)!.approvedVersionId, originalId);
-    const fetchImpl = (async () => okResponse("Fresh words from grandma.")) as typeof fetch;
-    await store.requestTranscription(jobId, { fetchImpl });
-    const d = store.getRecipeDetail(jobId)!;
-    assert.equal(d.originalTranscript?.text, "Fresh words from grandma.");
-    assert.equal(d.approvedVersionId, null);
-  });
-
-  it("cache keys are stable per recording hash and model", () => {
-    const k1 = transcriptionCacheKey("sha-aaa", "muse-voice-transcribe-1.0");
-    const k2 = transcriptionCacheKey("sha-aaa", "muse-voice-transcribe-1.0");
-    assert.equal(k1, k2);
-    assert.notEqual(k1, transcriptionCacheKey("sha-bbb", "muse-voice-transcribe-1.0"));
+    const r = await transcribeAudio(wavBytes(120), { fetchImpl });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.code, "empty_transcript");
   });
 });
