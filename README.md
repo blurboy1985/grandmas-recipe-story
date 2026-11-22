@@ -23,10 +23,13 @@ browser** first — no name, dish, language or checkbox to fill in before
 recording. Naming the card is optional and happens at save time (blanks
 save as “Grandma · Untitled dish”); a WAV upload remains as fallback,
 and the recipe box beside it is pre-loaded with three fictional sample
-cards. Deployed at https://grandma-recipe.danielquek.com (container
-v7, image `c2b68f9d…`). Checks: typecheck, lint (49 files) and 62 tests
-passing. One live Spark extraction verified; live Voice transcription
-not yet verified on a real recording. A three-minute demo video has
+cards. Deployed at https://grandma-recipe.danielquek.com as a plain
+Cloudflare Worker + static export (migrated off the container on
+7 Nov 2026; container/DO vestiges removed in Phase 8, 22 Nov 2026 —
+see docs/DEPLOY.md). Checks: typecheck, lint (43 files) and 49 tests
+passing. Live Spark extraction and live Voice transcription both
+verified on the real domain (uploads are resampled server-side to
+24 kHz, the rate Meta Voice accepts). A three-minute demo video has
 been rendered locally (git-ignored, not yet uploaded — see
 [demo storyboard](docs/DEMO.md)).**
 

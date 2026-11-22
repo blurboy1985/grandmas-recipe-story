@@ -1,82 +1,94 @@
-# Deployment — Cloudflare Containers demo
+# Deployment — plain Cloudflare Worker
 
-Deployed 28 October 2026 at https://grandma-recipe.danielquek.com
+Live at https://grandma-recipe.danielquek.com
 (Worker `grandma-recipe`, account `Daniel.tianwen@gmail.com's Account`).
+
+History: launched 28 October 2026 as a Cloudflare Container running
+the Next.js app; migrated to a plain Worker on 7 November 2026
+(Phase 7 cutover); container/DO vestiges removed 22 November 2026
+(Phase 8). The full record is in the migration log
+(`~/workspace/your_files/grandma-recipe-worker-migration-log.md`).
+The container-era implementation is preserved at git tag
+`pre-worker-migration`.
 
 ## Shape
 
-- The Next.js app runs unchanged in a Cloudflare Container
-  (`cloudflare/worker.ts` starts one named `GrandmaContainer`
-  Durable Object instance and forwards every request to port 8080).
-- This account requires the `durable_object` scheduling policy, so the
-  image and instance size (`standard-1`) are chosen in Worker code,
-  not in `wrangler.jsonc`. The config only names the digest-pinned
-  image under `containers[].images.app`.
-- Saving is browser-local (built with `NEXT_PUBLIC_LOCAL_MODE=1`,
-  script `build:local`): recipes, transcripts and audio Blobs are
-  stored in IndexedDB (`grandma-recipe-box`) on each visitor's own
-  device via `src/lib/local-recipes.ts`. They survive server restarts
-  but do not sync between devices/browsers, and clearing site data
-  deletes them. The server stores nothing for these flows.
+- **Plain Worker + static export.** `cloudflare/worker.ts` serves the
+  Next.js static export (`out/`, Workers Static Assets), answers
+  `GET /api/sample-audio` from the committed sample WAV asset, serves
+  the one exported recipe shell for any `/recipes/<id>`, and proxies
+  the two stateless AI routes. There is no container, no server-side
+  storage, and no database in the deployed shape.
+- Saving is browser-local (built with `NEXT_PUBLIC_LOCAL_MODE=1`):
+  recipes, transcripts and audio Blobs are stored in IndexedDB
+  (`grandma-recipe-box`) on each visitor's own device via
+  `src/lib/local-recipes.ts`. They survive server restarts but do not
+  sync between devices/browsers, and clearing site data deletes them.
+  The server stores nothing for these flows.
 - Live AI is stateless on the server: `POST /api/ai/transcribe`
-  (Voice) and `POST /api/ai/extract` (Spark, `RECIPE_MODEL` pinned to
-  `muse-spark-1.3`) validate, call Meta once, and return the result
-  for the browser to save. They need `META_API_KEY` as a Worker secret
-  (see below); without it they fail visibly with `missing_key`.
-- Container disk is ephemeral and now only scratch space. The local
-  (non-deployed) app keeps the SQLite design in
-  `docs/ARCHITECTURE.md`; server storage mode is the default build.
+  (Muse Voice Transcribe; uploads at rates other than 16/24 kHz are
+  resampled to 24 kHz server-side first) and `POST /api/ai/extract`
+  (Muse Spark, `RECIPE_MODEL` pinned to `muse-spark-1.3`) validate,
+  call Meta once, and return the result for the browser to save. They
+  need `META_API_KEY` as a Worker secret (see below); without it they
+  fail visibly with `missing_key`.
+- The old server mode is gone: Phase 8 deleted `src/server/store.ts`,
+  `src/server/db.ts` (SQLite), the six server-mode API routes
+  (recipes/uploads/media) and the `Dockerfile`/`.dockerignore`. Local
+  development is the browser-local mode; the two AI routes also exist
+  as Next routes under `src/app/api/ai/` for `next dev`.
 - Access: none. Daniel decided on 28 October 2026 that no login is
-  needed, so the site is public. The app itself has no auth either —
-  anyone who can reach the URL can upload and delete sample recipes.
+  needed, so the site is public.
 
 ## Redeploy after an app change
 
-Local Docker is Podman, so Wrangler's `docker` calls go through a
-shim that drops the buildx-only `--provenance`/`--sbom` flags:
-
 ```zsh
-cd /Users/danielquek/grandma-receipe-story
-podman machine start
-export DOCKER_HOST='unix:///var/folders/f4/bww3754n75g8s5b8pvb51l700000gp/T/podman/podman-machine-default-api.sock'
-export PATH="/tmp/cfbin:$PATH"   # /tmp/cfbin/docker -> podman shim
-
-npm run build:local
-docker build --platform linux/amd64 -t grandma-recipe:test .
-docker tag grandma-recipe:test \
-  registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer:vNEXT
-# Wrangler's own push refreshes the registry login and produces a
-# manifest Cloudflare accepts (a raw Podman push does not):
-npx wrangler containers push \
-  registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer:vNEXT
-podman pull registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer:vNEXT
-podman inspect --format '{{json .RepoDigests}}' \
-  registry.cloudflare.com/2b1f3493e8bbdea98825e1c13bf04a66/grandma-recipe-grandmacontainer:vNEXT
-# Put the new sha256 digest in wrangler.jsonc (containers.images.app.image),
-# bump the instance name in cloudflare/worker.ts (a running instance
-# keeps its starting image until it restarts), then:
-npx wrangler deploy
+npm run build:worker   # static export -> out/ (API routes stashed during the build)
+npx wrangler deploy    # production config: wrangler.jsonc
 ```
+
+No Podman/Docker, no image digest pinning, no instance-name bumps.
+Staging is `grandma-recipe-staging` (`wrangler.staging.jsonc`,
+workers.dev only, never the live domain).
 
 ## Setting the Meta key (Daniel, own terminal — hidden prompt)
 
 ```zsh
-cd /Users/danielquek/grandma-receipe-story
 npx wrangler secret put META_API_KEY
 ```
 
 Type the key at the hidden prompt; never paste it into chat or commit
-it. The Worker passes it only into the container process for the two
-stateless AI routes. Extraction uses Muse Spark 1.3; transcription
-uses Muse Voice Transcribe. Changing the secret redeploys the Worker;
-the running container picks the key up on its next start.
+it. The Worker uses it only for the two stateless AI routes.
+Extraction uses Muse Spark 1.3; transcription uses Muse Voice
+Transcribe.
 
-First request after an idle period cold-starts the container
-(Next.js boot, a few seconds).
+## Leftover: the GrandmaContainer class declaration
+
+Phase 8 removed the `GRANDMA_CONTAINER` binding (production version
+`a5d912f2`, 22 Nov 2026, verified live), so nothing can instantiate
+or call the Durable Object. The class itself is still *declared*:
+`cloudflare/worker.ts` still exports `GrandmaContainer` and
+`wrangler.jsonc` still carries the `exports` block. This is
+deliberate, not an oversight — the class was created via the
+declarative `exports` style (no migration history), and wrangler's
+`deleted_classes` migration refuses it with:
+
+> Cannot apply deleted_classes migration to non-existent class GrandmaContainer
+
+Deleting it would need a route outside wrangler's migration system
+(e.g. dashboard/support) if Cloudflare offers one. It is inert: no
+binding, no caller, no storage writes (the class never wrote app data
+to DO storage). Do not "fix" this by forcing a deploy shape wrangler
+rejects; if it is ever removed, do it as its own verified deploy.
 
 ## Rollback
 
-`npx wrangler rollback` restores the previous Worker version. The
-previous digest-pinned image stays in the registry; point
-`wrangler.jsonc` back at it and redeploy if the container image, not
-the Worker, is the problem.
+`npx wrangler rollback` restores a previous Worker version (e.g.
+`8153689f…`, the pre-Phase-8 production version, or `275da4b5…`, the
+Phase 7 cutover version). Rolling back to the pre-migration
+*container* version (`27ea6484…`) is no longer a plain rollback in
+practice: Containers need a Workers Paid plan (the account is on
+Free) and the binding/config are removed — it is the slow rebuild
+path: check out tag `pre-worker-migration`, re-add the
+container/DO config, and follow the container deploy flow preserved
+in that tag's copy of this document.

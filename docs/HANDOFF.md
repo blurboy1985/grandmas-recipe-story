@@ -1,6 +1,71 @@
 # Handoff — deployed to Cloudflare, public (no login)
 
-Updated 7 November 2026 (Muse session, Asia/Singapore).
+Updated 22 November 2026 (Muse session, Asia/Singapore).
+
+---
+
+## Worker migration: Phase 8 CLEANUP DONE (binding + vestige removal); DO class deletion blocked by wrangler (22 Nov 2026)
+
+Daniel approved Phase 8 after the 14-day soak passed (soak review
+21 Nov 2026, all green). Full detail: migration log, Phase 8 section.
+
+- **Deploy 1 — version `a5d912f2-1958-4f1f-a6be-9bcdf196b0f5`** (100%):
+  removed the `GRANDMA_CONTAINER` binding from `wrangler.jsonc`.
+  Dry-run showed bindings ASSETS/APP_MODE/RECIPE_MODEL only, no
+  warnings. Verified live: `META_API_KEY` present before AND after;
+  settings bindings no longer list `GRANDMA_CONTAINER`; home 200 /
+  12,734 B (byte-identical to the build); recipe shell byte-identical;
+  sample-audio byte-identical (sha256 `1c903fe8…`); `/api/recipes`
+  404; `extract {}` → 400 `empty_transcript`; transcribe empty form →
+  400 `audio_required`; **real Spark extraction 200 in 21.2 s**
+  (grounded); **real 32 kHz transcription 200 in 22.0 s** (resample
+  path). No rollback needed.
+- **Deploy 2 — NOT executed; wrangler refused the class deletion.**
+  With the class export + `exports` block removed and a
+  `deleted_classes` migration (`phase8-delete-grandmacontainer`)
+  added, `wrangler deploy --dry-run` failed before any upload:
+  **"Cannot apply deleted_classes migration to non-existent class
+  GrandmaContainer"** — the class was created via the declarative
+  `exports` style (no migration history), so the migration system
+  does not know it. Per the Phase 8 sequencing rule this was NOT
+  forced and no alternate deploy shape was improvised. The staged
+  code/config changes were reverted; the repo matches the deployed
+  Deploy 1 state. **Leftover state (inert):** `GrandmaContainer`
+  remains exported in `cloudflare/worker.ts` and declared in the
+  `exports` block, but it has NO binding and no caller, so it can
+  never run. See docs/DEPLOY.md ("Leftover") before touching it.
+- **Vestige code removed (repo):** `src/server/store.ts`,
+  `src/server/db.ts`, the six server-mode API routes
+  (`api/recipes` ×4, `api/uploads`, `api/media/[id]`), `Dockerfile`,
+  `.dockerignore`. Kept: `src/app/api/ai/*`, `src/app/api/sample-audio`.
+  Tests were trimmed only where they tested the deleted store:
+  `tests/db-roundtrip.test.ts` + `tests/sweep-relative.test.ts`
+  deleted outright; store-driven cases removed from
+  `transcription`/`extraction`/`family-evidence` tests (three
+  adapter error codes — bad_credentials / invalid_audio /
+  empty_transcript — and the multipart-schema case were re-asserted
+  at the adapter directly; the print/evidence-labels case in
+  family-evidence never used the store and stays). **Tests 70 → 49,
+  all passing**; typecheck pass; lint 43 files; `build:worker` pass.
+- **Container image retirement: NOT possible from here.** The
+  Containers API returns 403 (error 10000) with the scoped token —
+  same as at cutover and at the soak review. No supported call can
+  list or delete the stored image with this credential, and no
+  workaround was attempted. Image retention on Workers Free is
+  unconfirmed (the dashboard paywalls the Containers section).
+- **Docs:** `docs/DEPLOY.md` rewritten to the plain-Worker deploy;
+  README status paragraph refreshed; this entry added.
+- **Rollback reality now:** plain-Worker rollback to `8153689f`
+  (pre-Phase-8) or `275da4b5` (Phase 7) remains a plain
+  `wrangler rollback`. Container rollback is the slow rebuild path
+  from tag `pre-worker-migration` (and would need Workers Paid).
+- **Remaining work:** none for the migration. `worker-migration`
+  remains the production branch (not merged — the plan never called
+  for a merge). Known leftovers, all Daniel's call if ever wanted:
+  the inert GrandmaContainer declaration above; the stale
+  `cf:deploy`/`build:local` package scripts (container-era);
+  server-mode fetch strings in `src/app/page.tsx` (not executed by
+  the deployed LOCAL-mode build).
 
 ---
 
